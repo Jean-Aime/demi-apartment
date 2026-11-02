@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-paper font-sans leading-[1.5] text-ink-800;
+  }
+
+  ::selection {
+    @apply bg-gold/30 text-ink-900;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-4 outline-gold;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    @apply font-sans text-xs font-medium uppercase tracking-[0.28em] text-gold;
+  }
+
+  .display {
+    @apply font-serif font-normal leading-[1.2] tracking-[-0.01em];
+  }
+
+  .link-line {
+    @apply relative inline-flex items-center gap-2 pb-1 text-sm font-medium uppercase tracking-[0.18em] text-ink-500 transition-colors duration-500;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.6s cubic-bezier(0.2, 0.7, 0.1, 1), color 0.4s ease;
+  }
+
+  .link-line:hover,
+  .link-line:focus-visible,
+  .link-line[aria-current='page'] {
+    @apply text-gold;
+    background-size: 100% 1px;
+  }
+
+  .btn-gold {
+    @apply border border-gold/40 bg-gold-deep text-paper transition-all duration-500;
+  }
+
+  .btn-gold:hover,
+  .btn-gold:focus-visible {
+    @apply border-gold bg-gold text-ink-900;
+  }
+
+  .btn-outline {
+    @apply border border-ink-200 text-ink-700 transition-all duration-500;
+  }
+
+  .btn-outline:hover,
+  .btn-outline:focus-visible {
+    @apply border-gold text-gold;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translate3d(0, 32px, 0);
+    transition:
+      opacity 1.2s cubic-bezier(0.2, 0.7, 0.1, 1) var(--reveal-delay, 0ms),
+      transform 1.2s cubic-bezier(0.2, 0.7, 0.1, 1) var(--reveal-delay, 0ms);
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  .media-frame img {
+    transition: transform 1.6s cubic-bezier(0.2, 0.7, 0.1, 1);
+  }
+
+  .media-frame:hover img {
+    transform: scale(1.04);
+  }
+
+  .hero-media {
+    animation: hero-zoom 2.4s cubic-bezier(0.2, 0.7, 0.1, 1) both;
+  }
+
+  @keyframes hero-zoom {
+    0% {
+      transform: scale(1.12);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

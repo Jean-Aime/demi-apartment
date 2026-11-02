@@ -1,0 +1,132 @@
+import { ArrowRight } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { apartments, findApartment } from '@/data/apartments';
+import PageHeader from '@/components/layout/PageHeader';
+import SpecItem from '@/components/apartments/SpecItem';
+import ApartmentGallery from '@/components/apartments/ApartmentGallery';
+import Reveal from '@/components/Reveal';
+import NotFoundPage from '@/pages/NotFoundPage';
+
+export default function ApartmentDetailPage() {
+  const { slug } = useParams();
+  const apartment = findApartment(slug);
+
+  if (!apartment) {
+    return <NotFoundPage />;
+  }
+
+  return (
+    <main>
+      <PageHeader
+        eyebrow={`Room ${apartment.number}`}
+        title={apartment.name}
+        intro={apartment.summary}
+        image={apartment.photo}
+      />
+
+      <ApartmentGallery key={apartment.slug} roomName={apartment.name} photos={apartment.photos} />
+
+      <section className="bg-paper py-24 md:py-32">
+        <div className="mx-auto grid max-w-[1440px] gap-16 px-6 md:grid-cols-12 md:gap-x-8 md:px-12 lg:px-16">
+          <Reveal className="md:col-span-7">
+            <p className="eyebrow">Stay essentials</p>
+            <h2 className="display mt-5 text-3xl text-ink-900">Room details</h2>
+            <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-8 border-t border-ink-100 pt-8 sm:grid-cols-3">
+              <SpecItem label="Beds" value={apartment.bedConfiguration} />
+              <SpecItem label="Bedrooms" value={apartment.bedrooms ? String(apartment.bedrooms) : undefined} />
+              <SpecItem label="Bathrooms" value={apartment.bathrooms ? String(apartment.bathrooms) : undefined} />
+              <SpecItem label="Guests" value={apartment.maxOccupancy ? `Up to ${apartment.maxOccupancy}` : undefined} />
+              <SpecItem label="Size" value={apartment.sizeSqm ? `${apartment.sizeSqm} m²` : undefined} />
+              <SpecItem
+                label="Nightly rate"
+                value={
+                  apartment.startingPrice
+                    ? `${apartment.startingPrice.amount} ${apartment.startingPrice.currency} per night`
+                    : undefined
+                }
+              />
+              <SpecItem label="Check-in" value={apartment.checkIn} />
+              <SpecItem label="Check-out" value={apartment.checkOut} />
+              <SpecItem
+                label="Minimum stay"
+                value={apartment.minimumStay ? `${apartment.minimumStay} nights` : undefined}
+              />
+            </dl>
+          </Reveal>
+
+          <Reveal delay={150} className="md:col-span-4 md:col-start-9">
+            <p className="eyebrow">Amenities</p>
+            <h2 className="display mt-5 text-3xl text-ink-900">Included with your stay</h2>
+            {apartment.facilities.length > 0 ? (
+              <ul className="mt-8 grid gap-4 border-t border-ink-100 pt-8">
+                {apartment.facilities.map((facility) => (
+                  <li key={facility} className="border-t border-ink-100 pt-4 text-ink-800">
+                    {facility}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-8 border-t border-ink-100 pt-8 italic text-ink-400">
+                Room amenities are being confirmed by the property.
+              </p>
+            )}
+
+            <div className="mt-10 border-t border-ink-100 pt-8">
+              <h3 className="eyebrow">House rules</h3>
+              {apartment.houseRules.length > 0 ? (
+                <ul className="mt-5 space-y-3 text-sm text-ink-700">
+                  {apartment.houseRules.map((rule) => <li key={rule}>{rule}</li>)}
+                </ul>
+              ) : (
+                <p className="mt-4 text-sm italic text-ink-400">
+                  House rules for this room are being confirmed by the property.
+                </p>
+              )}
+              <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3 text-sm">
+                <Link to="/terms" className="link-line text-ink-900">Booking terms</Link>
+                <Link to="/cancellation" className="link-line text-ink-900">Cancellation policy</Link>
+              </div>
+            </div>
+
+            <div className="mt-10 flex flex-col gap-6">
+              <Link
+                to="/contact"
+                className="btn-gold group inline-flex items-center justify-center gap-3 px-8 py-4 text-xs font-medium uppercase tracking-[0.2em]"
+              >
+                Request this residence
+                <ArrowRight className="h-4 w-4 transition-transform duration-500 group-hover:translate-x-1" aria-hidden="true" />
+              </Link>
+              <Link to="/apartments" className="link-line text-ink-900">
+                View all nine rooms
+              </Link>
+            </div>
+          </Reveal>
+        </div>
+
+        <nav
+          aria-label="All nine rooms"
+          className="mx-auto mt-24 max-w-[1440px] border-t border-ink-100 px-6 pt-10 md:px-12 lg:px-16"
+        >
+          <p className="eyebrow">Explore the collection</p>
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-9">
+            {apartments.map((room) => (
+              <Link
+                key={room.slug}
+                to={`/apartments/${room.slug}`}
+                aria-current={room.slug === apartment.slug ? 'page' : undefined}
+                className={`min-w-0 border px-3 py-3 transition-colors sm:px-4 sm:py-4 ${
+                  room.slug === apartment.slug
+                    ? 'border-gold bg-paper-warm text-ink-900'
+                    : 'border-ink-100 text-ink-500 hover:border-gold hover:text-ink-900'
+                }`}
+              >
+                <span className="block text-[0.6rem] uppercase tracking-[0.18em] text-gold">Room</span>
+                <span className="mt-2 block font-serif text-xl">{room.number}</span>
+              </Link>
+            ))}
+          </div>
+        </nav>
+      </section>
+    </main>
+  );
+}
