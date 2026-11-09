@@ -21,9 +21,11 @@ import {
   type StatusFilter,
 } from '@/lib/admin';
 import { useApartments } from '@/hooks/useApartments';
+import AdminModal from '@/components/admin/AdminModal';
 
 const statusStyles: Record<BookingStatus, string> = {
   pending: 'bg-gold/15 text-ink-800',
+  awaiting_payment: 'bg-amber-100 text-amber-800',
   confirmed: 'bg-emerald-100 text-emerald-800',
   cancelled: 'bg-rose-100 text-rose-800',
   checked_in: 'bg-sky-100 text-sky-800',
@@ -47,6 +49,8 @@ export default function AdminPage() {
   const [actionError, setActionError] = useState('');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [statusDrafts, setStatusDrafts] = useState<Record<string, BookingStatus>>({});
+  const [selectedBooking, setSelectedBooking] = useState<BookingRequest | null>(null);
+  const [selectedBookingStatus, setSelectedBookingStatus] = useState<BookingStatus>('pending');
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [refreshCount, setRefreshCount] = useState(0);
@@ -102,7 +106,7 @@ export default function AdminPage() {
       try {
         const { data, error } = await client
           .from('booking_requests')
-          .select('id, apartment_slug, check_in, check_out, guests, guest_name, guest_email, guest_phone, notes, status, created_at')
+          .select('id, apartment_slug, check_in, check_out, guests, guest_name, guest_email, guest_phone, notes, status, payment_status, payment_reference, total_amount, currency, payment_transaction_id, payment_verified_at, hold_expires_at, created_at')
           .order('created_at', { ascending: false });
 
         if (!active) return;
@@ -145,8 +149,9 @@ export default function AdminPage() {
 
   const summary = [
     { label: 'Total requests', value: bookings.length, icon: CalendarDays },
-    { label: 'Awaiting review', value: bookings.filter((booking) => booking.status === 'pending').length, icon: Clock3 },
+    { label: 'Awaiting payment', value: bookings.filter((booking) => booking.status === 'awaiting_payment').length, icon: Clock3 },
     { label: 'Confirmed stays', value: bookings.filter((booking) => booking.status === 'confirmed').length, icon: Check },
+    { label: 'Payment resolution needed', value: bookings.filter((booking) => booking.payment_status === 'paid_unassigned').length, icon: ShieldCheck },
   ];
 
   async function handleSignIn(event: FormEvent<HTMLFormElement>) {
@@ -199,11 +204,11 @@ export default function AdminPage() {
     }
   }
 
-  async function updateStatus(booking: BookingRequest, status: BookingStatus) {
+  async function updateStatus(booking: BookingRequest, status: BookingStatus): Promise<boolean> {
     const client = supabase;
     if (!client) {
       setActionError('Booking updates are unavailable because the Supabase service is not configured.');
-      return;
+      return false;
     }
 
     setUpdatingId(booking.id);
@@ -220,18 +225,28 @@ export default function AdminPage() {
         setActionError(`Could not update ${booking.guest_name}'s request: ${error.message}`);
       } else if (!data) {
         setActionError(`Could not update ${booking.guest_name}'s request: no matching booking was updated.`);
+        return false;
       } else {
         setBookings((current) =>
           current.map((item) => (item.id === booking.id ? { ...item, status } : item)),
         );
         setStatusDrafts((current) => ({ ...current, [booking.id]: status }));
+        return true;
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unexpected network error.';
       setActionError(`Could not update ${booking.guest_name}'s request: ${message}`);
+      return false;
     } finally {
       setUpdatingId(null);
     }
+    return false;
+  }
+
+  async function saveSelectedBookingStatus() {
+    if (!selectedBooking) return;
+    const updated = await updateStatus(selectedBooking, selectedBookingStatus);
+    if (updated) setSelectedBooking(null);
   }
 
   if (authLoading) {
@@ -476,13 +491,14 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[860px] text-left">
+              <table className="w-full min-w-[980px] text-left">
                 <thead className="bg-paper-warm text-[0.65rem] uppercase tracking-[0.18em] text-ink-400">
                   <tr>
                     <th scope="col" className="px-6 py-4 font-medium">Guest</th>
                     <th scope="col" className="px-6 py-4 font-medium">Residence & dates</th>
                     <th scope="col" className="px-6 py-4 font-medium">Guests</th>
                     <th scope="col" className="px-6 py-4 font-medium">Status</th>
+                    <th scope="col" className="px-6 py-4 font-medium">Payment</th>
                     <th scope="col" className="px-6 py-4 font-medium">Request date</th>
                     <th scope="col" className="px-6 py-4 font-medium">Manage status</th>
                   </tr>
@@ -520,6 +536,15 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
                           {booking.status.replace('_', ' ')}
                         </span>
                       </td>
+                      <td className="px-6 py-5">
+                        <p className="text-sm capitalize text-ink-700">{booking.payment_status.replace('_', ' ')}</p>
+                        {booking.total_amount !== null && booking.currency && (
+                          <p className="mt-1 text-xs text-ink-500">
+                            {new Intl.NumberFormat('en', { style: 'currency', currency: booking.currency }).format(booking.total_amount)}
+                          </p>
+                        )}
+                        {booking.payment_reference && <p className="mt-1 max-w-32 truncate font-mono text-[0.6rem] text-ink-400" title={booking.payment_reference}>{booking.payment_reference}</p>}
+                      </td>
                       <td className="whitespace-nowrap px-6 py-5 text-sm text-ink-500">
                         {new Date(booking.created_at).toLocaleDateString('en-GB', {
                           day: 'numeric',
@@ -528,42 +553,18 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
                         })}
                       </td>
                       <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                          <label className="sr-only" htmlFor={`status-${booking.id}`}>
-                            Change status for {booking.guest_name}
-                          </label>
-                          <select
-                            id={`status-${booking.id}`}
-                            value={statusDrafts[booking.id] ?? booking.status}
-                            onChange={(event) =>
-                              setStatusDrafts((current) => ({
-                                ...current,
-                                [booking.id]: event.target.value as BookingStatus,
-                              }))
-                            }
-                            disabled={updatingId === booking.id}
-                            className="min-w-32 border border-ink-200 bg-paper px-2 py-2 text-xs capitalize text-ink-800 outline-none focus:border-gold disabled:opacity-50"
-                          >
-                            {bookingStatuses.map((status) => (
-                              <option key={status} value={status}>
-                                {status.replace('_', ' ')}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            disabled={
-                              updatingId === booking.id ||
-                              (statusDrafts[booking.id] ?? booking.status) === booking.status
-                            }
-                            onClick={() =>
-                              void updateStatus(booking, statusDrafts[booking.id] ?? booking.status)
-                            }
-                            className="border border-ink-200 px-3 py-2 text-xs text-ink-700 hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            {updatingId === booking.id ? 'Saving…' : 'Save'}
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          disabled={updatingId === booking.id}
+                          onClick={() => {
+                            setSelectedBooking(booking);
+                            setSelectedBookingStatus(statusDrafts[booking.id] ?? booking.status);
+                            setActionError('');
+                          }}
+                          className="border border-ink-200 px-3 py-2 text-xs text-ink-700 hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Manage
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -577,6 +578,50 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
           <AdminDashboard bookings={bookings} onNavigate={navigate} />
         )}
       </div>
+      <AdminModal
+        open={Boolean(selectedBooking)}
+        title="Update booking status"
+        description={selectedBooking ? `${selectedBooking.guest_name} · ${getApartmentName(selectedBooking.apartment_slug)}` : undefined}
+        onClose={() => {
+          if (!updatingId) setSelectedBooking(null);
+        }}
+      >
+        {selectedBooking && (
+          <div className="space-y-5">
+            <dl className="grid gap-4 border-b border-ink-100 pb-5 sm:grid-cols-2">
+              <div><dt className="eyebrow">Check-in</dt><dd className="mt-1 text-sm text-ink-900">{formatAdminDate(selectedBooking.check_in)}</dd></div>
+              <div><dt className="eyebrow">Check-out</dt><dd className="mt-1 text-sm text-ink-900">{formatAdminDate(selectedBooking.check_out)}</dd></div>
+            </dl>
+            <label className="block text-xs font-medium uppercase tracking-[0.12em] text-ink-500">
+              Booking status
+              <select value={selectedBookingStatus} onChange={(event) => setSelectedBookingStatus(event.target.value as BookingStatus)} className="mt-2 w-full border border-ink-200 bg-paper px-3 py-3 text-sm capitalize text-ink-900 outline-none focus:border-gold">
+                {bookingStatuses.map((status) => (
+                  <option
+                    key={status}
+                    value={status}
+                    disabled={status === 'confirmed' && !['paid', 'paid_unassigned'].includes(selectedBooking.payment_status)}
+                  >
+                    {status.replace('_', ' ')}
+                  </option>
+                ))}
+              </select>
+              {!['paid', 'paid_unassigned'].includes(selectedBooking.payment_status) && (
+                <p className="mt-2 text-xs text-ink-500">A booking cannot be confirmed until payment is verified by the server.</p>
+              )}
+              {selectedBooking.payment_status === 'paid_unassigned' && (
+                <p className="mt-2 text-xs text-rose-700">Payment is verified but the original date hold expired. Confirm only after the team resolves availability.</p>
+              )}
+            </label>
+            {actionError && <p className="text-sm text-rose-700" role="alert">{actionError}</p>}
+            <div className="flex gap-3 pt-2">
+              <button type="button" disabled={Boolean(updatingId)} onClick={() => void saveSelectedBookingStatus()} className="btn-gold px-5 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50">
+                {updatingId ? 'Saving…' : 'Save status'}
+              </button>
+              <button type="button" disabled={Boolean(updatingId)} onClick={() => setSelectedBooking(null)} className="btn-outline px-5 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50">Cancel</button>
+            </div>
+          </div>
+        )}
+      </AdminModal>
     </main>
   );
 }

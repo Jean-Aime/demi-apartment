@@ -57,21 +57,30 @@ export function overlapsBookedRange(checkIn: string, checkOut: string, ranges: B
   return ranges.some((range) => checkIn < range.checkOut && range.checkIn < checkOut);
 }
 
-export async function fetchBookedRanges(apartmentSlug: string): Promise<BookedRange[] | null> {
-  if (!supabase) return null;
+export async function fetchBookedRanges(apartmentSlug: string): Promise<BookedRange[]> {
+  if (!supabase) throw new Error('Supabase is not configured.');
 
   const { data, error } = await supabase.rpc('get_booked_dates', { p_apartment_slug: apartmentSlug });
-  if (error) return null;
+  if (error) throw new Error(error.message);
 
   const parsed = bookedDatesResponse.safeParse(data);
-  if (!parsed.success) return null;
+  if (!parsed.success) throw new Error('Availability data returned an unexpected format.');
 
   return parsed.data.map((row) => ({ checkIn: row.check_in, checkOut: row.check_out }));
 }
 
+export interface BookingCheckout {
+  checkoutUrl: string;
+  reference: string;
+  amount: number;
+  currency: 'USD' | 'EUR';
+  apartmentName: string;
+  holdExpiresAt: string;
+}
+
 export type CreateBookingResult =
-  | { ok: true; id: string }
-  | { ok: false; reason: 'conflict' | 'failed' | 'unavailable' };
+  | { ok: true; checkout: BookingCheckout }
+  | { ok: false; reason: 'conflict' | 'failed' | 'unavailable'; message?: string };
 
 export interface BookingConfirmation {
   reference: string;
@@ -82,29 +91,89 @@ export interface BookingConfirmation {
   guestEmail: string;
 }
 
-const EXCLUSION_VIOLATION = '23P01';
-
-export async function createBookingRequest(data: BookingData): Promise<CreateBookingResult> {
+export async function createBookingCheckout(data: BookingData): Promise<CreateBookingResult> {
   if (!supabase) return { ok: false, reason: 'unavailable' };
 
-  const id = crypto.randomUUID();
-
-  const { error } = await supabase.from('booking_requests').insert({
-    id,
-    status: 'pending',
-    apartment_slug: data.apartmentSlug,
-    check_in: data.checkIn,
-    check_out: data.checkOut,
-    guests: data.guests,
-    guest_name: data.guestName,
-    guest_email: data.guestEmail,
-    guest_phone: data.guestPhone,
-    notes: data.notes,
+  const { data: result, error } = await supabase.functions.invoke('create-checkout', {
+    body: {
+      apartmentSlug: data.apartmentSlug,
+      checkIn: data.checkIn,
+      checkOut: data.checkOut,
+      guests: data.guests,
+      guestName: data.guestName,
+      guestEmail: data.guestEmail,
+      guestPhone: data.guestPhone,
+      notes: data.notes,
+    },
   });
 
   if (error) {
-    return { ok: false, reason: error.code === EXCLUSION_VIOLATION ? 'conflict' : 'failed' };
+    const response = error.context instanceof Response ? error.context : undefined;
+    if (response?.status === 404) {
+      return {
+        ok: false,
+        reason: 'failed',
+        message: 'Secure checkout is not deployed to this Supabase project yet. Deploy the create-checkout Edge Function, then try again.',
+      };
+    }
+
+    if (response?.status === 409) {
+      return {
+        ok: false,
+        reason: 'conflict',
+        message: 'These dates have just been reserved by another guest. Please choose different dates.',
+      };
+    }
+
+    if (response) {
+      let payload: unknown;
+      try {
+        payload = await response.clone().json();
+      } catch {
+        payload = undefined;
+      }
+      const errorMessage =
+        payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+          ? payload.error
+          : undefined;
+      return {
+        ok: false,
+        reason: 'failed',
+        message: errorMessage ?? `Secure checkout service returned HTTP ${response.status}. Please try again or contact the property team.`,
+      };
+    }
+
+    return {
+      ok: false,
+      reason: 'failed',
+      message: 'Could not connect to the secure checkout service. Check your internet connection and confirm the Supabase Edge Function is deployed.',
+    };
   }
 
-  return { ok: true, id };
+  const parsed = z.object({
+    checkoutUrl: z.url(),
+    reference: z.string(),
+    amount: z.number().positive(),
+    currency: z.enum(['USD', 'EUR']),
+    apartmentName: z.string(),
+    holdExpiresAt: z.string(),
+  }).safeParse(result);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      reason: 'failed',
+      message: 'Secure checkout returned an unexpected response. Please contact the property team.',
+    };
+  }
+
+  const url = new URL(parsed.data.checkoutUrl);
+  if (url.protocol !== 'https:' || url.hostname !== 'checkout.flutterwave.com') {
+    return {
+      ok: false,
+      reason: 'failed',
+      message: 'Secure checkout returned an untrusted payment link. Please contact the property team.',
+    };
+  }
+  return { ok: true, checkout: parsed.data };
 }

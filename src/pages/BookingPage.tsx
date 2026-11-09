@@ -19,10 +19,10 @@ export default function BookingPage() {
         eyebrow="Reserve your stay"
         title={
           <>
-            Request your <span className="italic text-gold">residence.</span>
+            Book your <span className="italic text-gold">residence.</span>
           </>
         }
-        intro="Share your preferred dates and details. Requests are reviewed before any stay is confirmed."
+        intro="Choose your dates, select a residence and complete secure checkout. Your stay is confirmed only after payment is verified."
         image={media.hero}
       />
 
@@ -31,7 +31,7 @@ export default function BookingPage() {
           <Reveal className="lg:col-span-7">
             <Beds24BookingWidget />
             {!import.meta.env.VITE_BEDS24_BOOKING_URL && (
-              <BookingForm initialApartmentSlug={initialApartmentSlug} />
+              <BookingForm apartments={apartments} initialApartmentSlug={initialApartmentSlug} />
             )}
           </Reveal>
 
@@ -40,7 +40,7 @@ export default function BookingPage() {
               <p className="eyebrow">Need a hand?</p>
               <h2 className="display mt-5 text-3xl text-ink-900">We are here to help you choose.</h2>
               <p className="mt-4 text-sm leading-relaxed text-ink-500">
-                If you have a question about a room or your dates, contact the team before sending your request.
+                If you have a question about a room or your dates, contact the team before booking.
               </p>
               <Link
                 to="/contact"

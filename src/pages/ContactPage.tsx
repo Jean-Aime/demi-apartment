@@ -25,7 +25,7 @@ export default function ContactPage() {
             We would be glad to <span className="italic text-gold">hear from you.</span>
           </>
         }
-        intro="Questions about a residence, your dates or your arrival? Reach the team directly, or send a booking request and we will respond."
+        intro="Questions about a residence, your dates or your arrival? Reach the team directly before completing your booking."
         image={media.kigali}
       />
 

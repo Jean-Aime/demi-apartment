@@ -8,6 +8,7 @@ import {
   type ManagedApartment,
 } from '@/lib/propertyApartments';
 import { supabase } from '@/lib/supabase';
+import AdminModal from '@/components/admin/AdminModal';
 
 const fieldClass = 'mt-2 w-full border border-ink-200 bg-paper px-3 py-2.5 text-sm text-ink-900 outline-none focus:border-gold';
 const labelClass = 'block text-xs font-medium uppercase tracking-[0.12em] text-ink-500';
@@ -28,7 +29,7 @@ function PageTitle({ eyebrow, title, intro }: { eyebrow: string; title: string; 
 }
 
 export function AdminDashboard({ bookings, onNavigate }: AdminSectionProps) {
-  const pending = bookings.filter((booking) => booking.status === 'pending').length;
+  const pending = bookings.filter((booking) => ['pending', 'awaiting_payment'].includes(booking.status)).length;
   const confirmed = bookings.filter((booking) => ['confirmed', 'checked_in'].includes(booking.status)).length;
   const activeGuests = new Set(
     bookings.filter((booking) => !['cancelled', 'checked_out'].includes(booking.status))
@@ -36,8 +37,9 @@ export function AdminDashboard({ bookings, onNavigate }: AdminSectionProps) {
   ).size;
   const cards = [
     { title: 'Booking requests', value: bookings.length, to: '/admin/bookings' },
-    { title: 'Awaiting review', value: pending, to: '/admin/bookings' },
+    { title: 'Awaiting action', value: pending, to: '/admin/bookings' },
     { title: 'Confirmed stays', value: confirmed, to: '/admin/calendar' },
+    { title: 'Payment resolution needed', value: bookings.filter((booking) => booking.payment_status === 'paid_unassigned').length, to: '/admin/bookings' },
     { title: 'Active guest records', value: activeGuests, to: '/admin/guests' },
   ];
 
@@ -179,6 +181,7 @@ function formToApartment(form: ApartmentForm): Apartment {
 export function AdminApartments() {
   const [rooms, setRooms] = useState<ManagedApartment[]>([]);
   const [form, setForm] = useState<ApartmentForm>(emptyForm);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -200,6 +203,8 @@ export function AdminApartments() {
   function startNew() {
     setForm({ ...emptyForm, number: String(Math.max(0, ...rooms.map((room) => Number(room.number) || 0)) + 1).padStart(2, '0') });
     setNotice('');
+    setError('');
+    setEditorOpen(true);
   }
 
   async function saveApartment(event: FormEvent<HTMLFormElement>) {
@@ -223,6 +228,7 @@ export function AdminApartments() {
       if (saveError) throw new Error(saveError.message);
       setNotice('Residence saved. Published changes will appear on the public website.');
       setForm(emptyForm);
+      setEditorOpen(false);
       setResetCount((count) => count + 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not save this residence.');
@@ -243,9 +249,16 @@ export function AdminApartments() {
       {error && <p className="border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">{error}. Apply the latest Supabase migration if the table is missing.</p>}
       {notice && <p className="border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{notice}</p>}
 
-      <section className="border border-ink-100 bg-paper p-5 sm:p-6">
-        <h2 className="font-serif text-2xl text-ink-900">{form.slug ? `Edit ${form.name || form.slug}` : 'Residence details'}</h2>
-        <form onSubmit={saveApartment} className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <AdminModal
+        open={editorOpen}
+        size="xl"
+        title={form.slug && rooms.some((room) => room.slug === form.slug) ? `Edit ${form.name || form.slug}` : 'New residence'}
+        description="Update residence details. Published changes are reflected on the public website."
+        onClose={() => {
+          if (!saving) setEditorOpen(false);
+        }}
+      >
+        <form onSubmit={saveApartment} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <label className={labelClass}>Slug<input required disabled={rooms.some((room) => room.slug === form.slug)} value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} placeholder="residence-10" className={fieldClass} /></label>
           <label className={labelClass}>Room number<input required value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value })} className={fieldClass} /></label>
           <label className={labelClass}>Display name<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={fieldClass} /></label>
@@ -262,16 +275,16 @@ export function AdminApartments() {
           <label className={labelClass}>Check-in<input value={form.checkIn} onChange={(event) => setForm({ ...form, checkIn: event.target.value })} placeholder="15:00" className={fieldClass} /></label>
           <label className={labelClass}>Check-out<input value={form.checkOut} onChange={(event) => setForm({ ...form, checkOut: event.target.value })} placeholder="11:00" className={fieldClass} /></label>
           <label className={labelClass}>Nightly price<input type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className={fieldClass} /></label>
-          <label className={labelClass}>Currency<input value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value.toUpperCase() })} className={fieldClass} /></label>
+          <label className={labelClass}>Currency<select value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })} className={fieldClass}><option value="USD">USD</option><option value="EUR">EUR</option></select></label>
           <label className={`${labelClass} sm:col-span-2 lg:col-span-3`}>Amenities (one per line)<textarea rows={3} value={form.facilities} onChange={(event) => setForm({ ...form, facilities: event.target.value })} className={fieldClass} /></label>
           <label className={`${labelClass} sm:col-span-2 lg:col-span-3`}>House rules (one per line)<textarea rows={3} value={form.houseRules} onChange={(event) => setForm({ ...form, houseRules: event.target.value })} className={fieldClass} /></label>
           <label className="flex items-center gap-3 text-sm text-ink-700 sm:col-span-2 lg:col-span-3"><input type="checkbox" checked={form.published} onChange={(event) => setForm({ ...form, published: event.target.checked })} className="h-4 w-4 accent-[#B8954A]" />Published on the public website</label>
           <div className="flex flex-wrap gap-3 sm:col-span-2 lg:col-span-3">
             <button type="submit" disabled={saving} className="btn-gold inline-flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50"><Save className="h-4 w-4" aria-hidden="true" />{saving ? 'Saving…' : 'Save residence'}</button>
-            <button type="button" onClick={() => setForm(emptyForm)} className="btn-outline px-5 py-3 text-xs uppercase tracking-[0.12em]">Clear form</button>
+            <button type="button" disabled={saving} onClick={() => setEditorOpen(false)} className="btn-outline px-5 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50">Cancel</button>
           </div>
         </form>
-      </section>
+      </AdminModal>
 
       <section className="border border-ink-100 bg-paper">
         <div className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
@@ -286,7 +299,7 @@ export function AdminApartments() {
                   <img src={room.photo_src} alt="" className="h-14 w-16 shrink-0 object-cover" />
                   <div className="min-w-0"><p className="truncate font-medium text-ink-900">Room {room.number} · {room.name}</p><p className="mt-1 text-xs text-ink-500">{room.slug} · {room.published ? 'Published' : 'Unpublished'}</p></div>
                 </div>
-                <button type="button" onClick={() => { setForm(apartmentToForm(room)); setNotice(''); }} className="btn-outline px-4 py-2 text-xs uppercase tracking-[0.1em]">Edit</button>
+                <button type="button" onClick={() => { setForm(apartmentToForm(room)); setNotice(''); setError(''); setEditorOpen(true); }} className="btn-outline px-4 py-2 text-xs uppercase tracking-[0.1em]">Edit</button>
               </li>
             ))}
           </ul>
@@ -329,7 +342,7 @@ export function AdminCalendar({ bookings }: Pick<AdminSectionProps, 'bookings'>)
         <div className="grid grid-cols-7">
           {cells.map((day, index) => (
             <div key={index} className="min-h-20 border-b border-r border-ink-100 p-1 sm:min-h-28 sm:p-2">
-              {day && <><span className="text-xs text-ink-500">{day}</span><div className="mt-1 space-y-1">{bookingsForDay(day).slice(0, 2).map((booking) => <span key={booking.id} title={`${booking.guest_name} · ${booking.apartment_slug}`} className={`block truncate px-1 py-1 text-[0.6rem] sm:text-xs ${booking.status === 'pending' ? 'bg-gold/20 text-ink-800' : booking.status === 'cancelled' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800'}`}>{booking.guest_name}</span>)}</div></>}
+              {day && <><span className="text-xs text-ink-500">{day}</span><div className="mt-1 space-y-1">{bookingsForDay(day).slice(0, 2).map((booking) => <span key={booking.id} title={`${booking.guest_name} · ${booking.apartment_slug}`} className={`block truncate px-1 py-1 text-[0.6rem] sm:text-xs ${booking.status === 'pending' || booking.status === 'awaiting_payment' ? 'bg-gold/20 text-ink-800' : booking.status === 'cancelled' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800'}`}>{booking.guest_name}</span>)}</div></>}
             </div>
           ))}
         </div>
@@ -375,18 +388,23 @@ export function AdminReports({ bookings }: Pick<AdminSectionProps, 'bookings'>) 
     return total + Math.max(0, nights);
   }, 0);
   const confirmed = bookings.filter((booking) => ['confirmed', 'checked_in', 'checked_out'].includes(booking.status));
+  const verifiedRevenue = (currency: 'USD' | 'EUR') => bookings
+    .filter((booking) => ['paid', 'paid_unassigned'].includes(booking.payment_status) && booking.currency === currency)
+    .reduce((total, booking) => total + (booking.total_amount ?? 0), 0);
   const metrics = [
     ['Total requests', bookings.length],
     ['Confirmed / completed stays', confirmed.length],
     ['Requested or confirmed nights', totalNights],
     ['Distinct guests', new Set(bookings.map((booking) => booking.guest_email.toLowerCase())).size],
+    ['Verified revenue (USD)', new Intl.NumberFormat('en', { style: 'currency', currency: 'USD' }).format(verifiedRevenue('USD'))],
+    ['Verified revenue (EUR)', new Intl.NumberFormat('en', { style: 'currency', currency: 'EUR' }).format(verifiedRevenue('EUR'))],
   ];
 
   return (
     <div className="space-y-6">
       <PageTitle eyebrow="Insights" title="Booking reports" intro="Summary metrics from website booking requests. OTA bookings and revenue are not included." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{metrics.map(([label, value]) => <section key={label} className="border border-ink-100 bg-paper p-5"><p className="text-sm text-ink-500">{label}</p><p className="mt-4 font-serif text-4xl text-ink-900">{value}</p></section>)}</div>
-      <section className="border border-ink-100 bg-paper p-5"><h2 className="font-serif text-2xl text-ink-900">Requests by status</h2><ul className="mt-4 grid gap-3 sm:grid-cols-2">{bookingStatuses.map((status: BookingStatus) => <li key={status} className="flex justify-between border-b border-ink-100 py-2 text-sm"><span className="capitalize text-ink-600">{status.replace('_', ' ')}</span><strong className="font-medium text-ink-900">{bookings.filter((booking) => booking.status === status).length}</strong></li>)}</ul><p className="mt-4 text-xs text-ink-400">Financial reporting requires payment and rate data, which this request-only system does not currently store.</p></section>
+      <section className="border border-ink-100 bg-paper p-5"><h2 className="font-serif text-2xl text-ink-900">Bookings by status</h2><ul className="mt-4 grid gap-3 sm:grid-cols-2">{bookingStatuses.map((status: BookingStatus) => <li key={status} className="flex justify-between border-b border-ink-100 py-2 text-sm"><span className="capitalize text-ink-600">{status.replace('_', ' ')}</span><strong className="font-medium text-ink-900">{bookings.filter((booking) => booking.status === status).length}</strong></li>)}</ul><p className="mt-4 text-xs text-ink-400">Revenue includes only server-verified direct website payments; Airbnb and Booking.com figures are not imported.</p></section>
     </div>
   );
 }
@@ -399,6 +417,8 @@ interface PropertySettings {
 
 export function AdminSettings() {
   const [settings, setSettings] = useState<PropertySettings>({ email: '', phone: '', address: '' });
+  const [formSettings, setFormSettings] = useState<PropertySettings>({ email: '', phone: '', address: '' });
+  const [editorOpen, setEditorOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -417,7 +437,11 @@ export function AdminSettings() {
           .maybeSingle();
         if (!active) return;
         if (queryError) setError(`Could not load property settings: ${queryError.message}`);
-        else if (data) setSettings({ email: data.contact_email ?? '', phone: data.contact_phone ?? '', address: data.contact_address ?? '' });
+        else if (data) {
+          const nextSettings = { email: data.contact_email ?? '', phone: data.contact_phone ?? '', address: data.contact_address ?? '' };
+          setSettings(nextSettings);
+          setFormSettings(nextSettings);
+        }
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : 'Could not load property settings.');
       } finally {
@@ -434,11 +458,13 @@ export function AdminSettings() {
     setSaving(true); setError(''); setNotice('');
     try {
       const { error: saveError } = await supabase.from('property_settings').upsert({
-        id: 1, contact_email: settings.email.trim(), contact_phone: settings.phone.trim(),
-        contact_address: settings.address.trim(), updated_at: new Date().toISOString(),
+        id: 1, contact_email: formSettings.email.trim(), contact_phone: formSettings.phone.trim(),
+        contact_address: formSettings.address.trim(), updated_at: new Date().toISOString(),
       });
       if (saveError) throw new Error(saveError.message);
+      setSettings(formSettings);
       setNotice('Property contact settings saved.');
+      setEditorOpen(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not save settings.');
     } finally {
@@ -451,12 +477,25 @@ export function AdminSettings() {
       <PageTitle eyebrow="Configuration" title="Property settings" intro="Maintain contact details shown on the public website." />
       {error && <p className="border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">{error}. Apply the latest property management migration if the settings table is missing.</p>}
       {notice && <p className="border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800" role="status">{notice}</p>}
-      <form onSubmit={saveSettings} className="max-w-2xl space-y-5 border border-ink-100 bg-paper p-6">
-        <label className={labelClass}>Contact email<input type="email" required value={settings.email} onChange={(event) => setSettings({ ...settings, email: event.target.value })} className={fieldClass} /></label>
-        <label className={labelClass}>Telephone<input required value={settings.phone} onChange={(event) => setSettings({ ...settings, phone: event.target.value })} className={fieldClass} /></label>
-        <label className={labelClass}>Address<input required value={settings.address} onChange={(event) => setSettings({ ...settings, address: event.target.value })} className={fieldClass} /></label>
-        <button type="submit" disabled={loading || saving} className="btn-gold inline-flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50"><Check className="h-4 w-4" />{saving ? 'Saving…' : loading ? 'Loading…' : 'Save settings'}</button>
-      </form>
+      <section className="flex max-w-2xl flex-col gap-5 border border-ink-100 bg-paper p-6 sm:flex-row sm:items-end sm:justify-between">
+        <dl className="space-y-4">
+          <div><dt className={labelClass}>Contact email</dt><dd className="mt-1 break-all text-sm text-ink-900">{loading ? 'Loading…' : settings.email || 'Not set'}</dd></div>
+          <div><dt className={labelClass}>Telephone</dt><dd className="mt-1 text-sm text-ink-900">{settings.phone || 'Not set'}</dd></div>
+          <div><dt className={labelClass}>Address</dt><dd className="mt-1 text-sm text-ink-900">{settings.address || 'Not set'}</dd></div>
+        </dl>
+        <button type="button" disabled={loading} onClick={() => { setFormSettings(settings); setEditorOpen(true); setError(''); }} className="btn-outline px-5 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50">Edit settings</button>
+      </section>
+      <AdminModal open={editorOpen} title="Edit property settings" description="Changes are displayed in the public contact page and footer." onClose={() => { if (!saving) setEditorOpen(false); }}>
+        <form onSubmit={saveSettings} className="space-y-5">
+          <label className={labelClass}>Contact email<input type="email" required value={formSettings.email} onChange={(event) => setFormSettings({ ...formSettings, email: event.target.value })} className={fieldClass} /></label>
+          <label className={labelClass}>Telephone<input required value={formSettings.phone} onChange={(event) => setFormSettings({ ...formSettings, phone: event.target.value })} className={fieldClass} /></label>
+          <label className={labelClass}>Address<input required value={formSettings.address} onChange={(event) => setFormSettings({ ...formSettings, address: event.target.value })} className={fieldClass} /></label>
+          <div className="flex gap-3 pt-2">
+            <button type="submit" disabled={saving} className="btn-gold inline-flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50"><Check className="h-4 w-4" />{saving ? 'Saving…' : 'Save settings'}</button>
+            <button type="button" disabled={saving} onClick={() => setEditorOpen(false)} className="btn-outline px-5 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50">Cancel</button>
+          </div>
+        </form>
+      </AdminModal>
       <p className="max-w-2xl text-xs leading-relaxed text-ink-500">Channel manager connection, platform credentials, payments, and OTA synchronization must be configured in their respective provider accounts. Do not enter secret keys here.</p>
     </div>
   );

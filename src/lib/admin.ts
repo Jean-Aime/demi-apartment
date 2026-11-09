@@ -1,8 +1,10 @@
 import { z } from 'zod';
 
-export const bookingStatuses = ['pending', 'confirmed', 'cancelled', 'checked_in', 'checked_out'] as const;
+export const bookingStatuses = ['pending', 'awaiting_payment', 'confirmed', 'cancelled', 'checked_in', 'checked_out'] as const;
 export type BookingStatus = (typeof bookingStatuses)[number];
 export type StatusFilter = 'all' | BookingStatus;
+
+export const paymentStatuses = ['not_required', 'awaiting_payment', 'paid', 'failed', 'expired', 'paid_unassigned'] as const;
 
 export const bookingRequestSchema = z.array(
   z.object({
@@ -16,6 +18,13 @@ export const bookingRequestSchema = z.array(
     guest_phone: z.string(),
     notes: z.string(),
     status: z.enum(bookingStatuses),
+    payment_status: z.enum(paymentStatuses),
+    payment_reference: z.string().nullable(),
+    total_amount: z.coerce.number().nullable(),
+    currency: z.enum(['USD', 'EUR']).nullable(),
+    payment_transaction_id: z.string().nullable(),
+    payment_verified_at: z.string().nullable(),
+    hold_expires_at: z.string().nullable(),
     created_at: z.string(),
   }),
 );

@@ -97,7 +97,7 @@ export default function ApartmentDetailPage() {
                 to={`/booking?apartment=${apartment.slug}`}
                 className="btn-gold group inline-flex items-center justify-center gap-3 px-8 py-4 text-xs font-medium uppercase tracking-[0.2em]"
               >
-                Request this residence
+                Book this residence
                 <ArrowRight className="h-4 w-4 transition-transform duration-500 group-hover:translate-x-1" aria-hidden="true" />
               </Link>
               <Link to="/apartments" className="link-line text-ink-900">
