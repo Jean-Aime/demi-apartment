@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { contact, navigation, siteName, socialLinks } from '@/data/site';
+import { navigation, siteName, socialLinks } from '@/data/site';
 import { policyLinks } from '@/data/policies';
 import BrandMark from '@/components/layout/BrandMark';
+import { usePropertySettings } from '@/hooks/usePropertySettings';
 
 export default function SiteFooter() {
   const year = new Date().getFullYear();
+  const contact = usePropertySettings();
 
   return (
     <footer className="bg-paper-warm text-ink-400">

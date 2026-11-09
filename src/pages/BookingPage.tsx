@@ -1,15 +1,17 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { Mail } from 'lucide-react';
 import { media } from '@/data/media';
-import { findApartment } from '@/data/apartments';
 import PageHeader from '@/components/layout/PageHeader';
 import BookingForm from '@/components/booking/BookingForm';
+import Beds24BookingWidget from '@/components/booking/Beds24BookingWidget';
 import Reveal from '@/components/Reveal';
+import { useApartments } from '@/hooks/useApartments';
 
 export default function BookingPage() {
   const [searchParams] = useSearchParams();
+  const { apartments } = useApartments();
   const requestedSlug = searchParams.get('apartment') ?? undefined;
-  const initialApartmentSlug = findApartment(requestedSlug)?.slug;
+  const initialApartmentSlug = apartments.find((apartment) => apartment.slug === requestedSlug)?.slug;
 
   return (
     <main>
@@ -24,10 +26,13 @@ export default function BookingPage() {
         image={media.hero}
       />
 
-      <section className="bg-paper py-24 md:py-32">
+      <section className="bg-paper py-16 md:py-24">
         <div className="mx-auto grid max-w-[1440px] gap-20 px-6 md:px-12 lg:grid-cols-12 lg:gap-x-8 lg:px-16">
           <Reveal className="lg:col-span-7">
-            <BookingForm initialApartmentSlug={initialApartmentSlug} />
+            <Beds24BookingWidget />
+            {!import.meta.env.VITE_BEDS24_BOOKING_URL && (
+              <BookingForm initialApartmentSlug={initialApartmentSlug} />
+            )}
           </Reveal>
 
           <Reveal delay={150} className="lg:col-span-4 lg:col-start-9">

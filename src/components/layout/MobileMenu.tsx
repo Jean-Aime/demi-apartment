@@ -55,7 +55,7 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
           ))}
         </ul>
         <Link
-          to="/contact"
+          to="/booking"
           onClick={onClose}
           tabIndex={open ? 0 : -1}
           className="btn-gold mt-8 inline-flex w-fit items-center px-6 py-4 text-xs font-medium uppercase tracking-[0.16em] sm:mt-12 sm:px-8 sm:tracking-[0.2em]"

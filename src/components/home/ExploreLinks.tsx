@@ -25,7 +25,7 @@ const destinations = [
 
 export default function ExploreLinks() {
   return (
-    <section className="bg-paper-warm py-32 md:py-44">
+    <section className="bg-paper-warm py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
         <Reveal>
           <div className="grid gap-8 md:grid-cols-12 md:items-end md:gap-x-8">

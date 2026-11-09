@@ -3,7 +3,7 @@ import Reveal from '@/components/Reveal';
 
 export default function Introduction() {
   return (
-    <section className="bg-paper-warm py-32 md:py-44">
+    <section className="bg-paper-warm py-20 md:py-28">
       <div className="mx-auto grid max-w-[1440px] gap-16 px-6 md:grid-cols-12 md:gap-x-8 md:px-12 lg:px-16">
         <Reveal className="md:col-span-5 md:pt-24">
           <figure className="relative">

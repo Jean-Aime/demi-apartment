@@ -1,13 +1,15 @@
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { apartments } from '@/data/apartments';
 import Reveal from '@/components/Reveal';
-
-const featuredRooms = [apartments[1], apartments[4], apartments[7]];
+import { useApartments } from '@/hooks/useApartments';
 
 export default function HomeApartmentShowcase() {
+  const { apartments } = useApartments();
+  const featuredRooms = [apartments[1], apartments[4], apartments[7]].filter(Boolean);
+  if (featuredRooms.length === 0) return null;
+
   return (
-    <section className="overflow-hidden bg-ink-900 py-24 text-paper md:py-32">
+    <section className="overflow-hidden bg-ink-900 py-16 text-paper md:py-24">
       <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
         <div className="grid gap-10 border-b border-paper/15 pb-10 md:grid-cols-12 md:items-end md:gap-x-8">
           <Reveal className="md:col-span-7">

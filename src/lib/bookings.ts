@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { apartments } from '@/data/apartments';
 import { supabase } from '@/lib/supabase';
 
 export const MAX_GUESTS = 20;
@@ -8,9 +7,7 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose a date');
 
 export const bookingSchema = z
   .object({
-    apartmentSlug: z
-      .string()
-      .refine((slug) => apartments.some((apartment) => apartment.slug === slug), 'Choose a residence'),
+    apartmentSlug: z.string().min(1, 'Choose a residence').max(100, 'Choose a valid residence'),
     checkIn: isoDate,
     checkOut: isoDate,
     guests: z
@@ -61,6 +58,8 @@ export function overlapsBookedRange(checkIn: string, checkOut: string, ranges: B
 }
 
 export async function fetchBookedRanges(apartmentSlug: string): Promise<BookedRange[] | null> {
+  if (!supabase) return null;
+
   const { data, error } = await supabase.rpc('get_booked_dates', { p_apartment_slug: apartmentSlug });
   if (error) return null;
 
@@ -72,7 +71,7 @@ export async function fetchBookedRanges(apartmentSlug: string): Promise<BookedRa
 
 export type CreateBookingResult =
   | { ok: true; id: string }
-  | { ok: false; reason: 'conflict' | 'failed' };
+  | { ok: false; reason: 'conflict' | 'failed' | 'unavailable' };
 
 export interface BookingConfirmation {
   reference: string;
@@ -86,6 +85,8 @@ export interface BookingConfirmation {
 const EXCLUSION_VIOLATION = '23P01';
 
 export async function createBookingRequest(data: BookingData): Promise<CreateBookingResult> {
+  if (!supabase) return { ok: false, reason: 'unavailable' };
+
   const id = crypto.randomUUID();
 
   const { error } = await supabase.from('booking_requests').insert({

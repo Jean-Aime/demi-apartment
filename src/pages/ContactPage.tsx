@@ -1,35 +1,21 @@
 import { ArrowUpRight, Mail, MapPin, Phone } from 'lucide-react';
-import { contact } from '@/data/site';
 import { media } from '@/data/media';
 import PageHeader from '@/components/layout/PageHeader';
 import Reveal from '@/components/Reveal';
+import { usePropertySettings } from '@/hooks/usePropertySettings';
 
 const DIRECTIONS_URL = 'https://www.google.com/maps/dir/?api=1&destination=Kimironko+Kigali+Rwanda';
 const MAP_EMBED_URL =
   'https://www.openstreetmap.org/export/embed.html?bbox=30.0950%2C-1.9450%2C30.1250%2C-1.9200&layer=mapnik';
 
-const channels = [
-  {
-    icon: Mail,
-    label: 'Email',
-    value: contact.email,
-    href: `mailto:${contact.email}`,
-  },
-  {
-    icon: Phone,
-    label: 'Telephone',
-    value: contact.phone,
-    href: `tel:${contact.phone.replace(/\s/g, '')}`,
-  },
-  {
-    icon: MapPin,
-    label: 'Address',
-    value: contact.address,
-    href: DIRECTIONS_URL,
-  },
-];
-
 export default function ContactPage() {
+  const contact = usePropertySettings();
+  const channels = [
+    { icon: Mail, label: 'Email', value: contact.email, href: `mailto:${contact.email}` },
+    { icon: Phone, label: 'Telephone', value: contact.phone, href: `tel:${contact.phone.replace(/\s/g, '')}` },
+    { icon: MapPin, label: 'Address', value: contact.address, href: DIRECTIONS_URL },
+  ];
+
   return (
     <main>
       <PageHeader
@@ -43,7 +29,7 @@ export default function ContactPage() {
         image={media.kigali}
       />
 
-      <section className="bg-paper py-24 md:py-32">
+      <section className="bg-paper py-16 md:py-24">
         <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
           <div className="grid gap-12 md:grid-cols-3 md:gap-x-8">
             {channels.map((channel, index) => (
@@ -68,7 +54,7 @@ export default function ContactPage() {
         </div>
       </section>
 
-      <section className="bg-paper-warm py-24 md:py-32">
+      <section className="bg-paper-warm py-16 md:py-24">
         <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
           <div className="grid gap-16 md:grid-cols-12 md:gap-x-8">
             <div className="md:col-span-4">

@@ -27,7 +27,7 @@ export default function HomeClosingFeature() {
                 Take a closer look at the rooms, then send the team your preferred dates. They will review your request and follow up with you.
               </p>
               <Link
-                to="/contact"
+                to="/booking"
                 className="btn-gold group mt-9 inline-flex items-center gap-3 px-7 py-4 text-xs font-medium uppercase tracking-[0.2em]"
               >
                 Enquire about a stay

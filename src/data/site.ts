@@ -12,7 +12,6 @@ export const contact = {
   address: 'Kimironko, Kigali, Rwanda',
 } as const;
 
-// Booking and staff routes are excluded until the backend is live.
 export const navigation: NavItem[] = [
   { label: 'Apartments', to: '/apartments' },
   { label: 'Experience', to: '/experience' },

@@ -3,7 +3,7 @@ import Reveal from '@/components/Reveal';
 
 export default function Architecture() {
   return (
-    <section className="relative overflow-hidden bg-paper py-32 text-ink-900 md:py-44">
+    <section className="relative overflow-hidden bg-paper py-20 text-ink-900 md:py-28">
       <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
         <Reveal>
           <p className="eyebrow">Architecture and interiors</p>
@@ -12,7 +12,7 @@ export default function Architecture() {
           </h2>
         </Reveal>
 
-        <div className="relative mt-20 md:mt-28">
+        <div className="relative mt-16 md:mt-20">
           <Reveal>
             <figure className="media-frame">
               <div className="aspect-[4/3] overflow-hidden md:aspect-[21/9]">
@@ -41,7 +41,7 @@ export default function Architecture() {
           </Reveal>
         </div>
 
-        <div className="mt-40 grid gap-16 md:mt-64 md:grid-cols-12 md:items-end">
+        <div className="mt-28 grid gap-16 md:mt-40 md:grid-cols-12 md:items-end">
           <Reveal className="md:col-span-5 md:col-start-2">
             <figure className="media-frame">
               <div className="aspect-[4/3] overflow-hidden">

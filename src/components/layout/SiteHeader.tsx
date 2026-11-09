@@ -52,7 +52,7 @@ export default function SiteHeader() {
               ))}
               <li>
                 <Link
-                  to="/contact"
+                  to="/booking"
                   className={`inline-flex items-center px-5 py-2.5 text-xs font-medium uppercase tracking-[0.18em] ${
                     solid
                       ? 'btn-outline'

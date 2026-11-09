@@ -13,7 +13,7 @@ Website for DEMI APARTMENT, nine luxury serviced residences in Kimironko, Kigali
 ## Setup
 
 1. Install dependencies: `npm install`
-2. Copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from your Supabase project settings (Project Settings, API).
+2. Copy `.env.example` to `.env.local` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from your Supabase project settings (Project Settings, API). The legacy `VITE_SUPABASE_ANON_KEY` is also supported. Never put a service-role key or database connection string in client-side environment variables.
 3. Start the local site: `npm run dev`
 
 ## Supabase database
@@ -23,6 +23,7 @@ The schema lives in migrations applied to your Supabase project. The current mig
 1. `create_booking_requests`: the `booking_requests` table, row level security, and an anonymous insert policy that only accepts `pending` requests.
 2. `prevent_overlapping_confirmed_bookings`: an exclusion constraint that stops two confirmed or checked-in stays from overlapping at the same residence, and the `get_booked_dates` function, which returns booked date ranges only (no guest details).
 3. `admin_booking_access`: allows authenticated staff with the `admin` Supabase Auth app metadata role to read booking requests and update their status.
+4. `property_management`: creates managed residence and property contact tables, seeds the current nine residences, and enables admin-only editing with public reads for published listings.
 
 Apply them with the Supabase CLI (`supabase db push`) or by running each SQL file in the Supabase SQL editor, in order. All migrations are idempotent.
 
@@ -30,7 +31,15 @@ Public visitors can create pending requests and read booked date ranges. They ca
 
 ## Admin dashboard
 
-The booking dashboard is available at `/admin`. Apply all migrations, create the staff account in Supabase Auth, then set that user's **app metadata** to include `"role": "admin"` (for example, in the Supabase dashboard under the user's app metadata). The role must be assigned by a trusted administrator; do not use user metadata or expose a service-role key in the client. After the user's next sign-in, they can review guest and room details, then manage all booking statuses from the dashboard. Confirmations that overlap another confirmed stay are rejected by the database.
+The admin workspace is available at `/admin` with sections for overview, bookings, apartments, calendar, guests, reports, and property settings. Apply all migrations, create a unique staff account in Supabase Dashboard → Authentication → Users, then set that user's **app metadata** to include `"role": "admin"` (for example, in the Supabase dashboard under the user's app metadata). Use a strong, unique password stored in a password manager; do not use shared/default credentials. The role must be assigned by a trusted administrator; do not use user metadata or expose a service-role key in the client. After changing app metadata, refresh the session by signing out and in again. If the panel says the account is not an administrator, verify the displayed user ID and project, and confirm the role is under **App Metadata**, not **User Metadata**. Room and contact edits in the admin panel are stored in Supabase and are used by public apartment/contact pages. Confirmations that overlap another confirmed stay are rejected by the database.
+
+## Booking setup and channel management
+
+Beds24 is the selected property-management and channel-management platform for the nine residences. Its published channel-manager information describes two-way connections with Airbnb and Booking.com, plus a direct booking engine. Set up and verify the property, room inventory, rates and restrictions in Beds24 before taking direct online bookings.
+
+The website can embed the property's Beds24 booking engine by setting `VITE_BEDS24_BOOKING_URL` to the secure booking URL from the Beds24 account. The embed is restricted to HTTPS Beds24 domains. This is the preferred direct-booking calendar because Beds24 can supply current availability and bookings from the same inventory connected to the OTAs.
+
+Until that property-specific URL is configured, the site falls back to its request-only form. That calendar reads only confirmed stays stored in this site's Supabase database; it is not synchronized with Beds24, Airbnb or Booking.com and must not be presented as live channel availability. Configure the Beds24 account and connect the individual rooms and channels before taking direct online bookings.
 
 ## Booking flow
 
@@ -52,7 +61,7 @@ Content that must be replaced before launch is marked as placeholder:
 
 ## Not yet built
 
-- Channel manager and booking platform adapters (Airbnb, Booking.com). No live connection or data import is implemented.
+- Beds24 account configuration, property/room mapping, booking-engine URL, and channel activation. No live Airbnb or Booking.com connection or data import is implemented by this repository.
 
 ## Scripts
 

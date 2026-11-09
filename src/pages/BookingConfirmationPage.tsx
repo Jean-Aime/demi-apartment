@@ -48,7 +48,7 @@ export default function BookingConfirmationPage() {
         image={media.finalCta}
       />
 
-      <section className="bg-paper py-24 md:py-32">
+      <section className="bg-paper py-16 md:py-24">
         <div className="mx-auto grid max-w-[1440px] gap-16 px-6 md:grid-cols-12 md:gap-x-8 md:px-12 lg:px-16">
           <Reveal className="md:col-span-7">
             <dl className="grid gap-8 border-t border-ink-100 pt-8 sm:grid-cols-2">

@@ -1,31 +1,26 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { Building2, CalendarDays, Check, Clock3, LogOut, RefreshCw, Search, ShieldCheck } from 'lucide-react';
-import { z } from 'zod';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { apartments } from '@/data/apartments';
 import { supabase } from '@/lib/supabase';
-
-const bookingStatuses = ['pending', 'confirmed', 'cancelled', 'checked_in', 'checked_out'] as const;
-type BookingStatus = (typeof bookingStatuses)[number];
-type StatusFilter = 'all' | BookingStatus;
-
-const bookingRequestSchema = z.array(
-  z.object({
-    id: z.string(),
-    apartment_slug: z.string(),
-    check_in: z.string(),
-    check_out: z.string(),
-    guests: z.number(),
-    guest_name: z.string(),
-    guest_email: z.string(),
-    guest_phone: z.string(),
-    notes: z.string(),
-    status: z.enum(bookingStatuses),
-    created_at: z.string(),
-  }),
-);
-type BookingRequest = z.infer<typeof bookingRequestSchema>[number];
+import {
+  AdminApartments,
+  AdminCalendar,
+  AdminDashboard,
+  AdminGuests,
+  AdminReports,
+  AdminSettings,
+} from '@/components/admin/AdminSections';
+import {
+  bookingRequestSchema,
+  bookingStatuses,
+  formatAdminDate,
+  type BookingRequest,
+  type BookingStatus,
+  type StatusFilter,
+} from '@/lib/admin';
+import { useApartments } from '@/hooks/useApartments';
 
 const statusStyles: Record<BookingStatus, string> = {
   pending: 'bg-gold/15 text-ink-800',
@@ -35,19 +30,11 @@ const statusStyles: Record<BookingStatus, string> = {
   checked_out: 'bg-ink-100 text-ink-600',
 };
 
-function formatDate(value: string): string {
-  return new Date(`${value}T00:00:00`).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function getApartmentName(slug: string): string {
-  return apartments.find((apartment) => apartment.slug === slug)?.name ?? slug;
-}
-
 export default function AdminPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { apartments: managedApartments } = useApartments();
+  const section = location.pathname.replace(/^\/admin\/?/, '') || 'dashboard';
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [email, setEmail] = useState('');
@@ -65,35 +52,46 @@ export default function AdminPage() {
   const [refreshCount, setRefreshCount] = useState(0);
 
   const isAdmin = session?.user.app_metadata.role === 'admin';
+  const getApartmentName = useCallback((slug: string) =>
+    managedApartments.find((apartment) => apartment.slug === slug)?.name ??
+      apartments.find((apartment) => apartment.slug === slug)?.name ??
+      slug, [managedApartments]);
 
   useEffect(() => {
-    let active = true;
-    const loadSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (!active) return;
-      if (error) setAuthError(error.message);
-      setSession(data.session);
+    const client = supabase;
+    if (!client) {
+      setAuthError('Staff access is unavailable because the Supabase booking service is not configured.');
       setAuthLoading(false);
-    };
+      return;
+    }
 
-    void loadSession();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = client.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setAuthError('');
       setAuthLoading(false);
     });
+    client.auth.getSession().then(({ data, error }) => {
+      if (error) setAuthError(error.message);
+      setSession(data.session);
+      setAuthLoading(false);
+    }).catch((error: unknown) => {
+      setAuthError(error instanceof Error ? error.message : 'Could not restore the sign-in session.');
+      setAuthLoading(false);
+    });
 
     return () => {
-      active = false;
       subscription.unsubscribe();
     };
   }, []);
 
   useEffect(() => {
-    if (!isAdmin) {
+    const client = supabase;
+    if (!isAdmin || !client) {
       setBookings([]);
+      setBookingsError('');
+      setBookingsLoading(false);
       return;
     }
 
@@ -101,23 +99,30 @@ export default function AdminPage() {
     const loadBookings = async () => {
       setBookingsLoading(true);
       setBookingsError('');
-      const { data, error } = await supabase
-        .from('booking_requests')
-        .select('id, apartment_slug, check_in, check_out, guests, guest_name, guest_email, guest_phone, notes, status, created_at')
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await client
+          .from('booking_requests')
+          .select('id, apartment_slug, check_in, check_out, guests, guest_name, guest_email, guest_phone, notes, status, created_at')
+          .order('created_at', { ascending: false });
 
-      if (!active) return;
-      if (error) {
-        setBookingsError(`Could not load booking requests: ${error.message}`);
-      } else {
-        const parsed = bookingRequestSchema.safeParse(data);
-        if (parsed.success) {
-          setBookings(parsed.data);
+        if (!active) return;
+        if (error) {
+          setBookingsError(`Could not load booking requests: ${error.message}`);
         } else {
-          setBookingsError('Booking data returned an unexpected format. Please contact your administrator.');
+          const parsed = bookingRequestSchema.safeParse(data);
+          if (parsed.success) {
+            setBookings(parsed.data);
+          } else {
+            setBookingsError('Booking data returned an unexpected format. Please contact your administrator.');
+          }
         }
+      } catch (error) {
+        if (!active) return;
+        const message = error instanceof Error ? error.message : 'Unexpected network error.';
+        setBookingsError(`Could not load booking requests: ${message}`);
+      } finally {
+        if (active) setBookingsLoading(false);
       }
-      setBookingsLoading(false);
     };
 
     void loadBookings();
@@ -136,7 +141,7 @@ export default function AdminPage() {
           .some((value) => value.toLowerCase().includes(normalizedSearch));
       return matchesStatus && matchesSearch;
     });
-  }, [bookings, filter, search]);
+  }, [bookings, filter, getApartmentName, search]);
 
   const summary = [
     { label: 'Total requests', value: bookings.length, icon: CalendarDays },
@@ -146,32 +151,87 @@ export default function AdminPage() {
 
   async function handleSignIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const client = supabase;
+    if (!client) {
+      setAuthError('Staff access is unavailable because the Supabase booking service is not configured.');
+      return;
+    }
+
     setSigningIn(true);
     setAuthError('');
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setAuthError(error.message);
-    setSigningIn(false);
+    try {
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+      if (error) setAuthError(error.message);
+      if (data.session) setSession(data.session);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Unable to sign in. Please try again.');
+    } finally {
+      setSigningIn(false);
+    }
+
+  }
+
+  async function refreshAdminAccess() {
+    if (!supabase) return;
+    setAuthError('');
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+      setSession(data.session);
+      if (data.session?.user.app_metadata.role !== 'admin') {
+        setAuthError('The current Supabase token still has no admin app-metadata role. Verify the app_metadata value in the correct Supabase project, then sign out and sign in again.');
+      }
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Could not refresh the admin session.');
+    }
   }
 
   async function handleSignOut() {
+    const client = supabase;
+    if (!client) return;
+
     setAuthError('');
-    const { error } = await supabase.auth.signOut();
-    if (error) setAuthError(`Could not sign out: ${error.message}`);
+    try {
+      const { error } = await client.auth.signOut();
+      if (error) setAuthError(`Could not sign out: ${error.message}`);
+    } catch (error) {
+      setAuthError(`Could not sign out: ${error instanceof Error ? error.message : 'Unexpected error.'}`);
+    }
   }
 
   async function updateStatus(booking: BookingRequest, status: BookingStatus) {
+    const client = supabase;
+    if (!client) {
+      setActionError('Booking updates are unavailable because the Supabase service is not configured.');
+      return;
+    }
+
     setUpdatingId(booking.id);
     setActionError('');
-    const { error } = await supabase.from('booking_requests').update({ status }).eq('id', booking.id);
-    if (error) {
-      setActionError(`Could not update ${booking.guest_name}'s request: ${error.message}`);
-    } else {
-      setBookings((current) =>
-        current.map((item) => (item.id === booking.id ? { ...item, status } : item)),
-      );
-      setStatusDrafts((current) => ({ ...current, [booking.id]: status }));
+    try {
+      const { data, error } = await client
+        .from('booking_requests')
+        .update({ status })
+        .eq('id', booking.id)
+        .select('id')
+        .maybeSingle();
+
+      if (error) {
+        setActionError(`Could not update ${booking.guest_name}'s request: ${error.message}`);
+      } else if (!data) {
+        setActionError(`Could not update ${booking.guest_name}'s request: no matching booking was updated.`);
+      } else {
+        setBookings((current) =>
+          current.map((item) => (item.id === booking.id ? { ...item, status } : item)),
+        );
+        setStatusDrafts((current) => ({ ...current, [booking.id]: status }));
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unexpected network error.';
+      setActionError(`Could not update ${booking.guest_name}'s request: ${message}`);
+    } finally {
+      setUpdatingId(null);
     }
-    setUpdatingId(null);
   }
 
   if (authLoading) {
@@ -199,8 +259,25 @@ export default function AdminPage() {
           </p>
 
           {session && !isAdmin ? (
-            <div className="mt-8 border-l-2 border-gold bg-paper-warm p-4 text-sm leading-relaxed text-ink-700" role="alert">
-              This account does not have administrator access. Ask your Supabase administrator to grant the admin role.
+            <div className="mt-8 space-y-4 border-l-2 border-gold bg-paper-warm p-4 text-sm leading-relaxed text-ink-700" role="alert">
+              <p>This account is signed in, but this session does not contain the required <code>app_metadata.role = admin</code> claim.</p>
+              <dl className="grid gap-1 text-xs">
+                <div><dt className="inline font-medium">App project: </dt><dd className="inline break-all">{import.meta.env.VITE_SUPABASE_URL || 'not configured'}</dd></div>
+                <div><dt className="inline font-medium">Signed in as: </dt><dd className="inline">{session.user.email}</dd></div>
+                <div><dt className="inline font-medium">App metadata role: </dt><dd className="inline">{String(session.user.app_metadata.role ?? 'not set')}</dd></div>
+                <div><dt className="inline font-medium">User metadata role (not accepted for admin access): </dt><dd className="inline">{String(session.user.user_metadata.role ?? 'not set')}</dd></div>
+                <div><dt className="inline font-medium">User ID: </dt><dd className="break-all font-mono">{session.user.id}</dd></div>
+              </dl>
+              <p>Set the role in Supabase Dashboard → Authentication → Users → your account → App Metadata. Make sure this is the project in this app’s local environment, then refresh your session.</p>
+              <details className="text-xs">
+                <summary className="cursor-pointer font-medium underline">Show SQL for this signed-in user</summary>
+                <pre className="mt-2 overflow-x-auto border border-ink-100 bg-paper p-3 text-[0.65rem]">{`UPDATE auth.users
+SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb
+WHERE id = '${session.user.id}'::uuid;`}</pre>
+                <p className="mt-2">Run this only in the SQL Editor for the same Supabase project, as a trusted project administrator.</p>
+              </details>
+              <button type="button" onClick={() => void refreshAdminAccess()} className="btn-outline px-4 py-2 text-xs uppercase tracking-[0.12em]">Refresh admin access</button>
+              {authError && <p className="text-sm text-rose-700" role="alert">{authError}</p>}
             </div>
           ) : (
             <form onSubmit={handleSignIn} className="mt-8 space-y-5">
@@ -277,8 +354,46 @@ export default function AdminPage() {
         </div>
       </header>
 
+      <nav aria-label="Administration" className="border-b border-ink-100 bg-paper">
+        <div className="mx-auto flex max-w-[1440px] gap-2 overflow-x-auto px-5 py-3 sm:px-6 md:px-12 lg:px-16">
+          {[
+            ['Overview', '/admin'],
+            ['Bookings', '/admin/bookings'],
+            ['Apartments', '/admin/apartments'],
+            ['Calendar', '/admin/calendar'],
+            ['Guests', '/admin/guests'],
+            ['Reports', '/admin/reports'],
+            ['Settings', '/admin/settings'],
+          ].map(([label, path]) => (
+            <Link key={path} to={path} aria-current={(section === '' ? path === '/admin' : path === `/admin/${section}`) ? 'page' : undefined}
+              className={`whitespace-nowrap px-3 py-2 text-xs uppercase tracking-[0.1em] transition-colors ${(section === '' ? path === '/admin' : path === `/admin/${section}`) ? 'bg-ink-900 text-paper' : 'text-ink-600 hover:bg-paper-warm hover:text-ink-900'}`}>
+              {label}
+            </Link>
+          ))}
+        </div>
+      </nav>
+
       <div className="mx-auto max-w-[1440px] px-5 py-10 sm:px-6 md:px-12 md:py-16 lg:px-16">
         {authError && <p className="mb-6 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">{authError}</p>}
+        {bookingsError && section !== 'bookings' && (
+          <p className="mb-6 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">
+            {bookingsError} Check that the admin-access migration is applied and your role is in app_metadata.
+          </p>
+        )}
+        {section === '' || section === 'dashboard' ? (
+          <AdminDashboard bookings={bookings} onNavigate={navigate} />
+        ) : section === 'apartments' ? (
+          <AdminApartments />
+        ) : section === 'calendar' ? (
+          <AdminCalendar bookings={bookings} />
+        ) : section === 'guests' ? (
+          <AdminGuests bookings={bookings} />
+        ) : section === 'reports' ? (
+          <AdminReports bookings={bookings} />
+        ) : section === 'settings' ? (
+          <AdminSettings />
+        ) : section === 'bookings' ? (
+          <>
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div>
             <p className="eyebrow">Reservations</p>
@@ -396,7 +511,7 @@ export default function AdminPage() {
                           View room details
                         </Link>
                         <p className="mt-1 text-sm text-ink-500">
-                          {formatDate(booking.check_in)} – {formatDate(booking.check_out)}
+                          {formatAdminDate(booking.check_in)} – {formatAdminDate(booking.check_out)}
                         </p>
                       </td>
                       <td className="px-6 py-5 text-sm text-ink-700">{booking.guests}</td>
@@ -457,6 +572,10 @@ export default function AdminPage() {
             </div>
           )}
         </section>
+          </>
+        ) : (
+          <AdminDashboard bookings={bookings} onNavigate={navigate} />
+        )}
       </div>
     </main>
   );

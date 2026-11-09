@@ -10,7 +10,7 @@ export default function PolicyPage({ slug }: { slug: Policy['slug'] }) {
     <main>
       <PageHeader eyebrow={policy.eyebrow} title={policy.title} intro={policy.intro} image={media.architectureSide} />
 
-      <section className="bg-paper py-24 md:py-32">
+      <section className="bg-paper py-16 md:py-24">
         <div className="mx-auto max-w-3xl px-6 md:px-12">
           {policy.sections.map((section, index) => (
             <Reveal key={section.heading} delay={index * 60} className="border-t border-ink-100 py-12 first:border-t-0 first:pt-0">

@@ -1,7 +1,7 @@
 import { ArrowRight, Building2, ClipboardCheck, DoorOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { apartments } from '@/data/apartments';
 import Reveal from '@/components/Reveal';
+import { useApartments } from '@/hooks/useApartments';
 
 const guestHighlights = [
   {
@@ -20,7 +20,7 @@ const guestHighlights = [
     icon: ClipboardCheck,
     title: 'Hear from the team',
     description: 'Booking enquiries are reviewed by the team; your stay is confirmed when they accept it.',
-    link: { label: 'How to request a stay', to: '/contact' },
+    link: { label: 'How to request a stay', to: '/booking' },
   },
 ];
 
@@ -43,9 +43,12 @@ const planningSteps = [
 ];
 
 export default function HomeStayGuide() {
+  const { apartments } = useApartments();
+  const featuredApartment = apartments[6] ?? apartments[0];
+
   return (
     <>
-      <section className="bg-paper py-24 md:py-32">
+      <section className="bg-paper py-16 md:py-24">
         <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
           <div className="grid gap-12 md:grid-cols-12 md:gap-x-8">
             <Reveal className="md:col-span-4">
@@ -72,18 +75,18 @@ export default function HomeStayGuide() {
         </div>
       </section>
 
-      <section className="bg-paper-warm py-24 md:py-32">
+      <section className="bg-paper-warm py-16 md:py-24">
         <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
           <div className="grid gap-12 md:grid-cols-12 md:items-center md:gap-x-8">
             <Reveal className="md:col-span-5">
               <figure className="media-frame aspect-[4/5] overflow-hidden">
                 <img
-                  src={apartments[6].photo.src}
-                  alt={apartments[6].photo.alt}
+                  src={featuredApartment.photo.src}
+                  alt={featuredApartment.photo.alt}
                   loading="lazy"
                   className="h-full w-full object-cover"
                 />
-                <figcaption className="sr-only">Interior photograph of Room {apartments[6].number}</figcaption>
+                <figcaption className="sr-only">Interior photograph of Room {featuredApartment.number}</figcaption>
               </figure>
             </Reveal>
 
@@ -112,7 +115,7 @@ export default function HomeStayGuide() {
 
               <Reveal delay={200} className="mt-10">
                 <Link
-                  to="/contact"
+                  to="/booking"
                   className="btn-gold group inline-flex items-center gap-3 px-8 py-4 text-xs font-medium uppercase tracking-[0.2em]"
                 >
                   Start a booking request

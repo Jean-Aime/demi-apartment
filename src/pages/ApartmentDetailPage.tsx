@@ -1,17 +1,21 @@
 import { ArrowRight } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { apartments, findApartment } from '@/data/apartments';
 import PageHeader from '@/components/layout/PageHeader';
 import SpecItem from '@/components/apartments/SpecItem';
 import ApartmentGallery from '@/components/apartments/ApartmentGallery';
 import Reveal from '@/components/Reveal';
 import NotFoundPage from '@/pages/NotFoundPage';
+import { useApartments } from '@/hooks/useApartments';
 
 export default function ApartmentDetailPage() {
   const { slug } = useParams();
-  const apartment = findApartment(slug);
+  const { apartments, loading } = useApartments();
+  const apartment = apartments.find((room) => room.slug === slug);
 
   if (!apartment) {
+    if (loading) {
+      return <main className="min-h-[40vh] bg-paper" aria-label="Loading residence" />;
+    }
     return <NotFoundPage />;
   }
 
@@ -26,7 +30,7 @@ export default function ApartmentDetailPage() {
 
       <ApartmentGallery key={apartment.slug} roomName={apartment.name} photos={apartment.photos} />
 
-      <section className="bg-paper py-24 md:py-32">
+      <section className="bg-paper py-16 md:py-24">
         <div className="mx-auto grid max-w-[1440px] gap-16 px-6 md:grid-cols-12 md:gap-x-8 md:px-12 lg:px-16">
           <Reveal className="md:col-span-7">
             <p className="eyebrow">Stay essentials</p>
@@ -90,7 +94,7 @@ export default function ApartmentDetailPage() {
 
             <div className="mt-10 flex flex-col gap-6">
               <Link
-                to="/contact"
+                to={`/booking?apartment=${apartment.slug}`}
                 className="btn-gold group inline-flex items-center justify-center gap-3 px-8 py-4 text-xs font-medium uppercase tracking-[0.2em]"
               >
                 Request this residence
@@ -105,7 +109,7 @@ export default function ApartmentDetailPage() {
 
         <nav
           aria-label="All nine rooms"
-          className="mx-auto mt-24 max-w-[1440px] border-t border-ink-100 px-6 pt-10 md:px-12 lg:px-16"
+          className="mx-auto mt-16 max-w-[1440px] border-t border-ink-100 px-6 pt-8 md:px-12 lg:px-16"
         >
           <p className="eyebrow">Explore the collection</p>
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-9">

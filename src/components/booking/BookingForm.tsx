@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { apartments, findApartment } from '@/data/apartments';
+import { useApartments } from '@/hooks/useApartments';
+import DateRangeCalendar from '@/components/booking/DateRangeCalendar';
 import {
   MAX_GUESTS,
   bookingSchema,
@@ -11,7 +12,6 @@ import {
   fetchBookedRanges,
   formatIsoDate,
   overlapsBookedRange,
-  toIsoDate,
   type BookedRange,
   type BookingData,
   type BookingInput,
@@ -75,7 +75,7 @@ function AvailabilityNote({ availability }: { availability: Availability }) {
 
 export default function BookingForm({ initialApartmentSlug }: { initialApartmentSlug?: string }) {
   const navigate = useNavigate();
-  const today = toIsoDate(new Date());
+  const { apartments } = useApartments();
   const [availability, setAvailability] = useState<Availability>({ status: 'idle' });
 
   const {
@@ -83,6 +83,7 @@ export default function BookingForm({ initialApartmentSlug }: { initialApartment
     handleSubmit,
     watch,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<BookingInput, unknown, BookingData>({
     resolver: zodResolver(bookingSchema),
@@ -99,6 +100,14 @@ export default function BookingForm({ initialApartmentSlug }: { initialApartment
   });
 
   const apartmentSlug = watch('apartmentSlug');
+  const checkIn = watch('checkIn');
+  const checkOut = watch('checkOut');
+
+  useEffect(() => {
+    if (initialApartmentSlug && apartments.some((apartment) => apartment.slug === initialApartmentSlug)) {
+      setValue('apartmentSlug', initialApartmentSlug);
+    }
+  }, [apartments, initialApartmentSlug, setValue]);
 
   useEffect(() => {
     if (!apartmentSlug) {
@@ -128,7 +137,9 @@ export default function BookingForm({ initialApartmentSlug }: { initialApartment
         message:
           result.reason === 'conflict'
             ? 'These nights have just been confirmed for another guest. Please choose different dates.'
-            : 'We could not send your request. Please check your connection and try again.',
+            : result.reason === 'unavailable'
+              ? 'Booking requests are temporarily unavailable because the booking service is not configured. Please contact the team.'
+              : 'We could not send your request. Please check your connection and try again.',
       });
       return;
     }
@@ -136,7 +147,7 @@ export default function BookingForm({ initialApartmentSlug }: { initialApartment
     navigate('/booking/confirmation', {
       state: {
         reference: result.id.slice(0, 8).toUpperCase(),
-        apartmentName: findApartment(values.apartmentSlug)?.name ?? values.apartmentSlug,
+        apartmentName: apartments.find((apartment) => apartment.slug === values.apartmentSlug)?.name ?? values.apartmentSlug,
         checkIn: values.checkIn,
         checkOut: values.checkOut,
         guests: values.guests,
@@ -167,32 +178,32 @@ export default function BookingForm({ initialApartmentSlug }: { initialApartment
           </select>
         </Field>
 
-        <div className="grid gap-10 sm:grid-cols-2">
-          <Field id="checkIn" label="Check-in" error={errors.checkIn?.message}>
-            <input
-              id="checkIn"
-              type="date"
-              min={today}
-              aria-invalid={Boolean(errors.checkIn)}
-              aria-describedby={errors.checkIn ? 'checkIn-error' : undefined}
-              className={fieldClass}
-              {...register('checkIn')}
+        <div>
+          <p className={labelClass}>Stay dates</p>
+          <div className="mt-4 border border-ink-100 bg-paper p-4 sm:p-6">
+            <DateRangeCalendar
+              checkIn={checkIn}
+              checkOut={checkOut}
+              bookedRanges={availability.status === 'ready' ? availability.ranges : []}
+              onChange={(nextCheckIn, nextCheckOut) => {
+                setValue('checkIn', nextCheckIn, { shouldDirty: true, shouldValidate: true });
+                setValue('checkOut', nextCheckOut, { shouldDirty: true, shouldValidate: true });
+              }}
             />
-          </Field>
-          <Field id="checkOut" label="Check-out" error={errors.checkOut?.message}>
-            <input
-              id="checkOut"
-              type="date"
-              min={today}
-              aria-invalid={Boolean(errors.checkOut)}
-              aria-describedby={errors.checkOut ? 'checkOut-error' : undefined}
-              className={fieldClass}
-              {...register('checkOut')}
-            />
-          </Field>
+          </div>
+          <input type="hidden" {...register('checkIn')} />
+          <input type="hidden" {...register('checkOut')} />
+          {(errors.checkIn?.message || errors.checkOut?.message) && (
+            <p className="mt-2 text-sm text-[#D88A78]" role="alert">
+              {errors.checkIn?.message ?? errors.checkOut?.message}
+            </p>
+          )}
         </div>
 
         <AvailabilityNote availability={availability} />
+        <p className="border-l-2 border-gold bg-paper-warm px-4 py-3 text-xs leading-relaxed text-ink-600">
+          The calendar reflects website records only. Airbnb and Booking.com availability will be synchronized after the Beds24 connection is configured. Sending this form is a request, not a confirmed reservation.
+        </p>
 
         <Field id="guests" label="Guests" error={errors.guests?.message}>
           <input

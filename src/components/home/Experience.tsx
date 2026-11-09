@@ -22,7 +22,7 @@ const pillars = [
 
 export default function Experience() {
   return (
-    <section className="bg-paper py-32 md:py-44">
+    <section className="bg-paper py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
         <div className="grid gap-16 md:grid-cols-12 md:gap-x-8">
           <div className="md:col-span-5">
@@ -55,7 +55,7 @@ export default function Experience() {
           </div>
         </div>
 
-        <div className="mt-24 grid gap-8 md:mt-32 md:grid-cols-12 md:items-start">
+        <div className="mt-16 grid gap-8 md:mt-24 md:grid-cols-12 md:items-start">
           <Reveal className="md:col-span-7">
             <figure className="media-frame">
               <div className="aspect-[4/3] overflow-hidden">
@@ -68,7 +68,7 @@ export default function Experience() {
               </div>
             </figure>
           </Reveal>
-          <Reveal delay={200} className="md:col-span-4 md:col-start-9 md:mt-32">
+          <Reveal delay={200} className="md:col-span-4 md:col-start-9 md:mt-24">
             <figure className="media-frame">
               <div className="aspect-[3/4] overflow-hidden">
                 <img

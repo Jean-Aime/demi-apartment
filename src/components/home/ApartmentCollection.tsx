@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { apartments, type Apartment } from '@/data/apartments';
+import type { Apartment } from '@/data/apartments';
 import Reveal from '@/components/Reveal';
 import SpecItem from '@/components/apartments/SpecItem';
+import { useApartments } from '@/hooks/useApartments';
 
 interface CardLayout {
   span: string;
@@ -12,12 +13,12 @@ interface CardLayout {
 
 const layouts: CardLayout[] = [
   { span: 'md:col-span-7', aspect: 'aspect-[4/3]', offset: '' },
-  { span: 'md:col-span-5', aspect: 'aspect-[3/4]', offset: 'md:mt-32' },
+  { span: 'md:col-span-5', aspect: 'aspect-[3/4]', offset: 'md:mt-20' },
   { span: 'md:col-span-4', aspect: 'aspect-[4/5]', offset: '' },
   { span: 'md:col-span-4', aspect: 'aspect-square', offset: 'md:mt-16' },
-  { span: 'md:col-span-4', aspect: 'aspect-[3/4]', offset: 'md:mt-40' },
+  { span: 'md:col-span-4', aspect: 'aspect-[3/4]', offset: 'md:mt-24' },
   { span: 'md:col-span-6', aspect: 'aspect-[16/10]', offset: '' },
-  { span: 'md:col-span-6', aspect: 'aspect-[4/5]', offset: 'md:mt-24' },
+  { span: 'md:col-span-6', aspect: 'aspect-[4/5]', offset: 'md:mt-16' },
   { span: 'md:col-span-5', aspect: 'aspect-[4/5]', offset: 'md:mt-12' },
   { span: 'md:col-span-7', aspect: 'aspect-[16/9]', offset: '' },
 ];
@@ -60,14 +61,16 @@ function ApartmentCard({ apartment, index }: { apartment: Apartment; index: numb
 }
 
 export default function ApartmentCollection() {
+  const { apartments, error } = useApartments();
+
   return (
-    <section className="bg-paper py-32 md:py-44">
+    <section className="bg-paper py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
         <div className="flex flex-col justify-between gap-8 md:flex-row md:items-end">
           <Reveal>
             <p className="eyebrow">The apartment collection</p>
             <h2 className="display mt-6 max-w-3xl text-[clamp(2.5rem,5vw,4.75rem)] text-ink-900">
-              Explore all nine <span className="italic text-gold">rooms.</span>
+              Explore all {apartments.length} <span className="italic text-gold">rooms.</span>
             </h2>
           </Reveal>
           <Reveal delay={150}>
@@ -77,11 +80,12 @@ export default function ApartmentCollection() {
           </Reveal>
         </div>
 
-        <div className="mt-20 grid grid-cols-1 gap-x-8 gap-y-24 md:grid-cols-12 md:gap-y-28">
+        <div className="mt-14 grid grid-cols-1 gap-x-8 gap-y-16 md:grid-cols-12 md:gap-y-20">
           {apartments.map((apartment, index) => (
             <ApartmentCard key={apartment.slug} apartment={apartment} index={index} />
           ))}
         </div>
+        {error && <p className="mt-8 text-xs text-ink-400" role="status">Showing the saved residence list while live property data is unavailable.</p>}
       </div>
     </section>
   );
