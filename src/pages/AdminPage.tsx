@@ -22,12 +22,14 @@ import {
 } from '@/lib/admin';
 import { useApartments } from '@/hooks/useApartments';
 import AdminModal from '@/components/admin/AdminModal';
+import { AdminAmenities, AdminAvailability, AdminHouseRules } from '@/components/admin/AdminPropertyContent';
 
 const statusStyles: Record<BookingStatus, string> = {
   pending: 'bg-gold/15 text-ink-800',
   awaiting_payment: 'bg-amber-100 text-amber-800',
   confirmed: 'bg-emerald-100 text-emerald-800',
   cancelled: 'bg-rose-100 text-rose-800',
+  expired: 'bg-ink-100 text-ink-600',
   checked_in: 'bg-sky-100 text-sky-800',
   checked_out: 'bg-ink-100 text-ink-600',
 };
@@ -53,6 +55,8 @@ export default function AdminPage() {
   const [selectedBookingStatus, setSelectedBookingStatus] = useState<BookingStatus>('pending');
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
+  const [checkInFrom, setCheckInFrom] = useState('');
+  const [checkInTo, setCheckInTo] = useState('');
   const [refreshCount, setRefreshCount] = useState(0);
 
   const isAdmin = session?.user.app_metadata.role === 'admin';
@@ -104,9 +108,12 @@ export default function AdminPage() {
       setBookingsLoading(true);
       setBookingsError('');
       try {
+        const { error: expiryError } = await client.rpc('admin_expire_booking_holds');
+        if (expiryError) throw new Error(`Could not refresh expired reservation holds: ${expiryError.message}`);
+
         const { data, error } = await client
           .from('booking_requests')
-          .select('id, apartment_slug, check_in, check_out, guests, guest_name, guest_email, guest_phone, notes, status, payment_status, payment_reference, total_amount, currency, payment_transaction_id, payment_verified_at, hold_expires_at, created_at')
+          .select('id, booking_reference, apartment_slug, check_in, check_out, guests, adults, children, guest_name, guest_email, guest_phone, guest_country, estimated_arrival_time, policies_accepted_at, policy_version, accepted_house_rule_ids, accepted_house_rules, notes, status, payment_status, payment_reference, total_amount, currency, payment_transaction_id, payment_verified_at, hold_expires_at, created_at')
           .order('created_at', { ascending: false });
 
         if (!active) return;
@@ -141,11 +148,14 @@ export default function AdminPage() {
       const matchesStatus = filter === 'all' || booking.status === filter;
       const matchesSearch =
         !normalizedSearch ||
-        [booking.guest_name, booking.guest_email, getApartmentName(booking.apartment_slug)]
+        [booking.booking_reference ?? '', booking.guest_name, booking.guest_email, getApartmentName(booking.apartment_slug)]
           .some((value) => value.toLowerCase().includes(normalizedSearch));
-      return matchesStatus && matchesSearch;
+      const matchesDateRange =
+        (!checkInFrom || booking.check_in >= checkInFrom) &&
+        (!checkInTo || booking.check_in <= checkInTo);
+      return matchesStatus && matchesSearch && matchesDateRange;
     });
-  }, [bookings, filter, getApartmentName, search]);
+  }, [bookings, checkInFrom, checkInTo, filter, getApartmentName, search]);
 
   const summary = [
     { label: 'Total requests', value: bookings.length, icon: CalendarDays },
@@ -375,6 +385,9 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
             ['Overview', '/admin'],
             ['Bookings', '/admin/bookings'],
             ['Apartments', '/admin/apartments'],
+            ['Availability', '/admin/availability'],
+            ['Amenities', '/admin/amenities'],
+            ['House rules', '/admin/house-rules'],
             ['Calendar', '/admin/calendar'],
             ['Guests', '/admin/guests'],
             ['Reports', '/admin/reports'],
@@ -399,6 +412,12 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
           <AdminDashboard bookings={bookings} onNavigate={navigate} />
         ) : section === 'apartments' ? (
           <AdminApartments />
+        ) : section === 'availability' ? (
+          <AdminAvailability />
+        ) : section === 'amenities' ? (
+          <AdminAmenities />
+        ) : section === 'house-rules' ? (
+          <AdminHouseRules />
         ) : section === 'calendar' ? (
           <AdminCalendar bookings={bookings} />
         ) : section === 'guests' ? (
@@ -413,7 +432,7 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
           <div>
             <p className="eyebrow">Reservations</p>
             <h1 className="display mt-3 text-[clamp(2rem,8vw,3rem)] text-ink-900">Booking requests</h1>
-            <p className="mt-3 text-sm text-ink-500">Review enquiries and update each guest’s booking status.</p>
+            <p className="mt-3 text-sm text-ink-500">Search reservation references, check dates and manage each booking and payment state.</p>
           </div>
           <button
             type="button"
@@ -456,16 +475,26 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
               ))}
             </div>
             <label className="relative block md:w-72">
-              <span className="sr-only">Search guest or residence</span>
+              <span className="sr-only">Search reference, guest or residence</span>
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" aria-hidden="true" />
               <input
                 type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search guest or residence"
+                placeholder="Reference, guest or residence"
                 className="w-full border border-ink-100 bg-paper-warm py-2.5 pl-10 pr-3 text-sm text-ink-900 outline-none focus:border-gold"
               />
             </label>
+            <div className="flex flex-wrap gap-3">
+              <label className="text-xs text-ink-500">
+                Check-in from
+                <input type="date" value={checkInFrom} onChange={(event) => setCheckInFrom(event.target.value)} className="mt-1 block border border-ink-100 bg-paper px-2 py-2 text-sm text-ink-800" />
+              </label>
+              <label className="text-xs text-ink-500">
+                Check-in to
+                <input type="date" value={checkInTo} onChange={(event) => setCheckInTo(event.target.value)} className="mt-1 block border border-ink-100 bg-paper px-2 py-2 text-sm text-ink-800" />
+              </label>
+            </div>
           </div>
 
           {actionError && (
@@ -491,7 +520,7 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px] text-left">
+              <table className="w-full min-w-[1080px] text-left">
                 <thead className="bg-paper-warm text-[0.65rem] uppercase tracking-[0.18em] text-ink-400">
                   <tr>
                     <th scope="col" className="px-6 py-4 font-medium">Guest</th>
@@ -508,6 +537,7 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
                     <tr key={booking.id} className="align-top">
                       <td className="px-6 py-5">
                         <p className="font-medium text-ink-900">{booking.guest_name}</p>
+                        {booking.booking_reference && <p className="mt-1 font-mono text-xs text-gold-deep">{booking.booking_reference}</p>}
                         <a href={`mailto:${booking.guest_email}`} className="mt-1 block text-sm text-ink-500 hover:text-gold">
                           {booking.guest_email}
                         </a>
@@ -530,7 +560,11 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
                           {formatAdminDate(booking.check_in)} – {formatAdminDate(booking.check_out)}
                         </p>
                       </td>
-                      <td className="px-6 py-5 text-sm text-ink-700">{booking.guests}</td>
+                      <td className="px-6 py-5 text-sm text-ink-700">
+                        {booking.adults} {booking.adults === 1 ? 'adult' : 'adults'}
+                        {booking.children > 0 && <span className="block text-xs text-ink-500">{booking.children} {booking.children === 1 ? 'child' : 'children'}</span>}
+                        {booking.guest_country && <span className="mt-1 block text-xs text-ink-400">{booking.guest_country}</span>}
+                      </td>
                       <td className="px-6 py-5">
                         <span className={`inline-flex whitespace-nowrap px-2.5 py-1 text-[0.65rem] font-medium uppercase tracking-[0.12em] ${statusStyles[booking.status]}`}>
                           {booking.status.replace('_', ' ')}
@@ -544,6 +578,9 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
                           </p>
                         )}
                         {booking.payment_reference && <p className="mt-1 max-w-32 truncate font-mono text-[0.6rem] text-ink-400" title={booking.payment_reference}>{booking.payment_reference}</p>}
+                        {booking.hold_expires_at && booking.status === 'awaiting_payment' && (
+                          <p className="mt-1 text-[0.65rem] text-ink-400">Hold expires {new Date(booking.hold_expires_at).toLocaleString()}</p>
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-6 py-5 text-sm text-ink-500">
                         {new Date(booking.created_at).toLocaleDateString('en-GB', {
@@ -588,9 +625,18 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
       >
         {selectedBooking && (
           <div className="space-y-5">
+            {selectedBooking.booking_reference && (
+              <p className="font-mono text-sm text-gold-deep">Reference: {selectedBooking.booking_reference}</p>
+            )}
             <dl className="grid gap-4 border-b border-ink-100 pb-5 sm:grid-cols-2">
               <div><dt className="eyebrow">Check-in</dt><dd className="mt-1 text-sm text-ink-900">{formatAdminDate(selectedBooking.check_in)}</dd></div>
               <div><dt className="eyebrow">Check-out</dt><dd className="mt-1 text-sm text-ink-900">{formatAdminDate(selectedBooking.check_out)}</dd></div>
+              <div><dt className="eyebrow">Guest composition</dt><dd className="mt-1 text-sm text-ink-900">{selectedBooking.adults} adults, {selectedBooking.children} children</dd></div>
+              <div><dt className="eyebrow">Country</dt><dd className="mt-1 text-sm text-ink-900">{selectedBooking.guest_country ?? 'Not provided'}</dd></div>
+              <div><dt className="eyebrow">Estimated arrival</dt><dd className="mt-1 text-sm text-ink-900">{selectedBooking.estimated_arrival_time ?? 'Not provided'}</dd></div>
+              <div><dt className="eyebrow">Policies accepted</dt><dd className="mt-1 text-sm text-ink-900">{selectedBooking.policies_accepted_at ? `${new Date(selectedBooking.policies_accepted_at).toLocaleString()} (${selectedBooking.policy_version ?? 'version not recorded'})` : 'Not recorded'}</dd></div>
+              <div className="sm:col-span-2"><dt className="eyebrow">House rules accepted</dt><dd className="mt-2 text-sm text-ink-700">{selectedBooking.accepted_house_rules.length ? <ul className="list-disc space-y-1 pl-5">{selectedBooking.accepted_house_rules.map((rule) => <li key={`${rule.id}-${rule.revision}`}>{rule.category}: {rule.title} (revision {rule.revision})</li>)}</ul> : 'No published rules were in force when this reservation was created.'}</dd></div>
+              <div><dt className="eyebrow">Payment state</dt><dd className="mt-1 text-sm capitalize text-ink-900">{selectedBooking.payment_status.replace('_', ' ')}</dd></div>
             </dl>
             <label className="block text-xs font-medium uppercase tracking-[0.12em] text-ink-500">
               Booking status
@@ -599,14 +645,13 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
                   <option
                     key={status}
                     value={status}
-                    disabled={status === 'confirmed' && !['paid', 'paid_unassigned'].includes(selectedBooking.payment_status)}
                   >
                     {status.replace('_', ' ')}
                   </option>
                 ))}
               </select>
-              {!['paid', 'paid_unassigned'].includes(selectedBooking.payment_status) && (
-                <p className="mt-2 text-xs text-ink-500">A booking cannot be confirmed until payment is verified by the server.</p>
+              {!['paid', 'paid_unassigned'].includes(selectedBooking.payment_status) && selectedBookingStatus === 'confirmed' && (
+                <p className="mt-2 text-xs text-amber-800">Online payment is not configured. Confirm manually only after you have checked availability and agreed payment arrangements with the guest.</p>
               )}
               {selectedBooking.payment_status === 'paid_unassigned' && (
                 <p className="mt-2 text-xs text-rose-700">Payment is verified but the original date hold expired. Confirm only after the team resolves availability.</p>

@@ -7,6 +7,7 @@ import {
   fetchManagedApartments,
   type ManagedApartment,
 } from '@/lib/propertyApartments';
+import { uploadPropertyImage } from '@/lib/propertyContent';
 import { supabase } from '@/lib/supabase';
 import AdminModal from '@/components/admin/AdminModal';
 
@@ -32,7 +33,7 @@ export function AdminDashboard({ bookings, onNavigate }: AdminSectionProps) {
   const pending = bookings.filter((booking) => ['pending', 'awaiting_payment'].includes(booking.status)).length;
   const confirmed = bookings.filter((booking) => ['confirmed', 'checked_in'].includes(booking.status)).length;
   const activeGuests = new Set(
-    bookings.filter((booking) => !['cancelled', 'checked_out'].includes(booking.status))
+    bookings.filter((booking) => !['cancelled', 'expired', 'checked_out'].includes(booking.status))
       .map((booking) => booking.guest_email.toLowerCase()),
   ).size;
   const cards = [
@@ -100,10 +101,14 @@ interface ApartmentForm {
   photoSrc: string;
   photoAlt: string;
   photos: string;
-  bedConfiguration: string;
+  bedType: string;
+  bedQuantity: string;
+  bedDimensions: string;
+  bedConfigurationVerified: boolean;
   bedrooms: string;
   bathrooms: string;
   maxOccupancy: string;
+  maxOccupancyVerified: boolean;
   sizeSqm: string;
   checkIn: string;
   checkOut: string;
@@ -113,13 +118,15 @@ interface ApartmentForm {
   price: string;
   currency: string;
   published: boolean;
+  bookingEnabled: boolean;
 }
 
 const emptyForm: ApartmentForm = {
   slug: '', number: '', name: '', summary: '', photoSrc: '', photoAlt: '', photos: '',
-  bedConfiguration: '', bedrooms: '', bathrooms: '', maxOccupancy: '', sizeSqm: '',
+  bedType: '', bedQuantity: '', bedDimensions: '', bedConfigurationVerified: false,
+  bedrooms: '', bathrooms: '', maxOccupancy: '', maxOccupancyVerified: false, sizeSqm: '',
   checkIn: '', checkOut: '', minimumStay: '', facilities: '', houseRules: '',
-  price: '', currency: 'USD', published: true,
+  price: '', currency: 'USD', published: false, bookingEnabled: false,
 };
 
 function splitLines(value: string): string[] {
@@ -131,16 +138,21 @@ function apartmentToForm(room: ManagedApartment): ApartmentForm {
     slug: room.slug, number: room.number, name: room.name, summary: room.summary,
     photoSrc: room.photo_src, photoAlt: room.photo_alt,
     photos: room.photos.map((photo) => `${photo.src}|${photo.alt}`).join('\n'),
-    bedConfiguration: room.bed_configuration ?? '',
+    bedType: room.bed_type ?? '',
+    bedQuantity: room.bed_quantity?.toString() ?? '',
+    bedDimensions: room.bed_dimensions ?? '',
+    bedConfigurationVerified: room.bed_configuration_verified,
     bedrooms: room.bedrooms?.toString() ?? '',
     bathrooms: room.bathrooms?.toString() ?? '',
     maxOccupancy: room.max_occupancy?.toString() ?? '',
+    maxOccupancyVerified: room.max_occupancy_verified,
     sizeSqm: room.size_sqm?.toString() ?? '',
     checkIn: room.check_in ?? '', checkOut: room.check_out ?? '',
     minimumStay: room.minimum_stay?.toString() ?? '',
     facilities: room.facilities.join('\n'), houseRules: room.house_rules.join('\n'),
     price: room.starting_price_amount?.toString() ?? '',
     currency: room.starting_price_currency ?? 'USD', published: room.published,
+    bookingEnabled: room.booking_enabled,
   };
 }
 
@@ -157,6 +169,11 @@ function formToApartment(form: ApartmentForm): Apartment {
   }).filter((photo) => photo.src);
 
   const price = nullableNumber(form.price);
+  const bedConfiguration = [
+    form.bedQuantity.trim(),
+    form.bedType.trim(),
+    form.bedDimensions.trim() ? `(${form.bedDimensions.trim()})` : '',
+  ].filter(Boolean).join(' ');
   return {
     slug: form.slug.trim().toLowerCase(),
     number: form.number.trim(),
@@ -164,7 +181,7 @@ function formToApartment(form: ApartmentForm): Apartment {
     summary: form.summary.trim(),
     photo: { src: form.photoSrc.trim(), alt: form.photoAlt.trim() },
     photos: galleryPhotos.length ? galleryPhotos : [{ src: form.photoSrc.trim(), alt: form.photoAlt.trim() }],
-    bedConfiguration: form.bedConfiguration.trim() || undefined,
+    bedConfiguration: bedConfiguration || undefined,
     bedrooms: nullableNumber(form.bedrooms),
     bathrooms: nullableNumber(form.bathrooms),
     maxOccupancy: nullableNumber(form.maxOccupancy),
@@ -175,6 +192,7 @@ function formToApartment(form: ApartmentForm): Apartment {
     facilities: splitLines(form.facilities),
     houseRules: splitLines(form.houseRules),
     startingPrice: price === undefined ? undefined : { amount: price, currency: form.currency.trim() || 'USD' },
+    bookingEnabled: form.bookingEnabled,
   };
 }
 
@@ -187,6 +205,7 @@ export function AdminApartments() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [resetCount, setResetCount] = useState(0);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -201,10 +220,30 @@ export function AdminApartments() {
   }, [resetCount]);
 
   function startNew() {
-    setForm({ ...emptyForm, number: String(Math.max(0, ...rooms.map((room) => Number(room.number) || 0)) + 1).padStart(2, '0') });
+    setForm({ ...emptyForm, number: String(Math.max(0, ...rooms.map((room) => Number(room.number.replace(/\D/g, '')) || 0)) + 1).padStart(2, '0') });
     setNotice('');
     setError('');
     setEditorOpen(true);
+  }
+
+  async function uploadRoomImage(file: File, mainPhoto: boolean) {
+    setUploadingImage(true);
+    setError('');
+    try {
+      const url = await uploadPropertyImage(file, `rooms/${form.slug || 'new-room'}`);
+      if (mainPhoto) {
+        setForm((current) => ({ ...current, photoSrc: url }));
+      } else {
+        setForm((current) => ({
+          ...current,
+          photos: [current.photos, `${url}|`].filter(Boolean).join('\n'),
+        }));
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not upload this room photo.');
+    } finally {
+      setUploadingImage(false);
+    }
   }
 
   async function saveApartment(event: FormEvent<HTMLFormElement>) {
@@ -214,8 +253,27 @@ export function AdminApartments() {
       setError('Use a lowercase URL-safe slug, such as residence-10.');
       return;
     }
-    if (!form.number.trim() || !form.name.trim() || !form.photoSrc.trim()) {
-      setError('Room number, name, and main photo URL are required.');
+    if (!form.number.trim() || !form.name.trim() || !form.photoSrc.trim() || !form.photoAlt.trim()) {
+      setError('Room number, name, main photo URL, and photo description are required.');
+      return;
+    }
+    if (splitLines(form.photos).some((line) => {
+      const separatorIndex = line.indexOf('|');
+      return separatorIndex < 0 || !line.slice(separatorIndex + 1).trim();
+    })) {
+      setError('Add a meaningful photo description after the | separator for each gallery image.');
+      return;
+    }
+    const capacity = nullableNumber(form.maxOccupancy);
+    const rate = nullableNumber(form.price);
+    if (form.bookingEnabled && (
+      !capacity || capacity > 20 || !form.maxOccupancyVerified ||
+      !form.bedConfigurationVerified || !form.bedType.trim() ||
+      !nullableNumber(form.bedQuantity) || !form.bedDimensions.trim() ||
+      nullableNumber(form.bedrooms) === undefined || nullableNumber(form.bathrooms) === undefined ||
+      !rate || rate <= 0 || !form.currency.trim() || !form.checkIn.trim() || !form.checkOut.trim()
+    )) {
+      setError('Online booking needs verified bed type, quantity, dimensions and maximum occupancy, bedroom and bathroom counts, a positive nightly rate, photos, and check-in/check-out times.');
       return;
     }
 
@@ -223,7 +281,13 @@ export function AdminApartments() {
     setError('');
     setNotice('');
     try {
-      const record = apartmentToRecord(formToApartment(form), form.published);
+      const record = apartmentToRecord(formToApartment(form), form.published, {
+        bedType: form.bedType.trim(),
+        bedQuantity: nullableNumber(form.bedQuantity),
+        bedDimensions: form.bedDimensions.trim(),
+        bedConfigurationVerified: form.bedConfigurationVerified,
+        maxOccupancyVerified: form.maxOccupancyVerified,
+      });
       const { error: saveError } = await supabase.from('property_apartments').upsert(record, { onConflict: 'slug' });
       if (saveError) throw new Error(saveError.message);
       setNotice('Residence saved. Published changes will appear on the public website.');
@@ -264,23 +328,29 @@ export function AdminApartments() {
           <label className={labelClass}>Display name<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={fieldClass} /></label>
           <label className={`${labelClass} sm:col-span-2 lg:col-span-3`}>Description<textarea rows={2} value={form.summary} onChange={(event) => setForm({ ...form, summary: event.target.value })} className={fieldClass} /></label>
           <label className={labelClass}>Main photo URL<input required value={form.photoSrc} onChange={(event) => setForm({ ...form, photoSrc: event.target.value })} placeholder="/IMG_8664.JPG.jpeg" className={fieldClass} /></label>
-          <label className={labelClass}>Main photo alt text<input value={form.photoAlt} onChange={(event) => setForm({ ...form, photoAlt: event.target.value })} className={fieldClass} /></label>
-          <label className={`${labelClass} sm:col-span-2 lg:col-span-3`}>Gallery photos (one per line: URL | description)<textarea rows={3} value={form.photos} onChange={(event) => setForm({ ...form, photos: event.target.value })} className={fieldClass} /></label>
-          <label className={labelClass}>Bed configuration<input value={form.bedConfiguration} onChange={(event) => setForm({ ...form, bedConfiguration: event.target.value })} className={fieldClass} /></label>
+          <label className={labelClass}>Upload main photo<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingImage} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadRoomImage(file, true); event.currentTarget.value = ''; }} className={fieldClass} /><span className="mt-1 block text-[0.65rem] normal-case text-ink-400">JPG, PNG, or WebP up to 5 MB.</span></label>
+          <label className={labelClass}>Main photo description<input required value={form.photoAlt} onChange={(event) => setForm({ ...form, photoAlt: event.target.value })} className={fieldClass} /></label>
+          <label className={`${labelClass} sm:col-span-2 lg:col-span-3`}>Gallery photos (one per line: URL | description)<textarea rows={3} value={form.photos} onChange={(event) => setForm({ ...form, photos: event.target.value })} className={fieldClass} /><input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingImage} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadRoomImage(file, false); event.currentTarget.value = ''; }} className={fieldClass} aria-label="Upload an additional room photo" /></label>
+          <label className={labelClass}>Bed type<input value={form.bedType} onChange={(event) => setForm({ ...form, bedType: event.target.value })} placeholder="Pending Verification" className={fieldClass} /></label>
+          <label className={labelClass}>Bed quantity<input type="number" min="1" step="1" value={form.bedQuantity} onChange={(event) => setForm({ ...form, bedQuantity: event.target.value })} placeholder="Pending Verification" className={fieldClass} /></label>
+          <label className={labelClass}>Bed dimensions<input value={form.bedDimensions} onChange={(event) => setForm({ ...form, bedDimensions: event.target.value })} placeholder="Pending Verification" className={fieldClass} /></label>
+          <label className="flex items-center gap-3 text-sm text-ink-700 sm:col-span-2 lg:col-span-3"><input type="checkbox" checked={form.bedConfigurationVerified} onChange={(event) => setForm({ ...form, bedConfigurationVerified: event.target.checked })} className="h-4 w-4 accent-[#B8954A]" />I verified this room’s bed type, quantity and dimensions</label>
           <label className={labelClass}>Bedrooms<input type="number" min="0" value={form.bedrooms} onChange={(event) => setForm({ ...form, bedrooms: event.target.value })} className={fieldClass} /></label>
           <label className={labelClass}>Bathrooms<input type="number" min="0" value={form.bathrooms} onChange={(event) => setForm({ ...form, bathrooms: event.target.value })} className={fieldClass} /></label>
           <label className={labelClass}>Maximum occupancy<input type="number" min="1" max="20" value={form.maxOccupancy} onChange={(event) => setForm({ ...form, maxOccupancy: event.target.value })} className={fieldClass} /></label>
+          <label className="flex items-center gap-3 text-sm text-ink-700 sm:col-span-2 lg:col-span-3"><input type="checkbox" checked={form.maxOccupancyVerified} onChange={(event) => setForm({ ...form, maxOccupancyVerified: event.target.checked })} className="h-4 w-4 accent-[#B8954A]" />I verified this room’s maximum occupancy</label>
           <label className={labelClass}>Size (m²)<input type="number" min="1" step="0.1" value={form.sizeSqm} onChange={(event) => setForm({ ...form, sizeSqm: event.target.value })} className={fieldClass} /></label>
           <label className={labelClass}>Minimum stay (nights)<input type="number" min="1" value={form.minimumStay} onChange={(event) => setForm({ ...form, minimumStay: event.target.value })} className={fieldClass} /></label>
           <label className={labelClass}>Check-in<input value={form.checkIn} onChange={(event) => setForm({ ...form, checkIn: event.target.value })} placeholder="15:00" className={fieldClass} /></label>
           <label className={labelClass}>Check-out<input value={form.checkOut} onChange={(event) => setForm({ ...form, checkOut: event.target.value })} placeholder="11:00" className={fieldClass} /></label>
           <label className={labelClass}>Nightly price<input type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className={fieldClass} /></label>
           <label className={labelClass}>Currency<select value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })} className={fieldClass}><option value="USD">USD</option><option value="EUR">EUR</option></select></label>
-          <label className={`${labelClass} sm:col-span-2 lg:col-span-3`}>Amenities (one per line)<textarea rows={3} value={form.facilities} onChange={(event) => setForm({ ...form, facilities: event.target.value })} className={fieldClass} /></label>
-          <label className={`${labelClass} sm:col-span-2 lg:col-span-3`}>House rules (one per line)<textarea rows={3} value={form.houseRules} onChange={(event) => setForm({ ...form, houseRules: event.target.value })} className={fieldClass} /></label>
-          <label className="flex items-center gap-3 text-sm text-ink-700 sm:col-span-2 lg:col-span-3"><input type="checkbox" checked={form.published} onChange={(event) => setForm({ ...form, published: event.target.checked })} className="h-4 w-4 accent-[#B8954A]" />Published on the public website</label>
+          <p className="border-l-2 border-gold bg-paper-warm px-4 py-3 text-xs leading-relaxed text-ink-600 sm:col-span-2 lg:col-span-3">Manage verified room/shared amenities in “Amenities” and approved property policies in “House rules”. Older room text fields are not shown publicly.</p>
+          <label className="flex items-center gap-3 text-sm text-ink-700 sm:col-span-2 lg:col-span-3"><input type="checkbox" checked={form.bookingEnabled} onChange={(event) => setForm({ ...form, bookingEnabled: event.target.checked })} className="h-4 w-4 accent-[#B8954A]" />Enable online reservations for this room</label>
+          <p className="text-xs text-ink-500 sm:col-span-2 lg:col-span-3">Online reservations require verified bed type, quantity, dimensions and maximum occupancy, plus room counts, price, photos, and check-in/check-out times. Dates are still checked against confirmed stays and admin-blocked dates.</p>
+          <label className="flex items-center gap-3 text-sm text-ink-700 sm:col-span-2 lg:col-span-3"><input type="checkbox" checked={form.published} onChange={(event) => setForm({ ...form, published: event.target.checked, bookingEnabled: event.target.checked ? form.bookingEnabled : false })} className="h-4 w-4 accent-[#B8954A]" />Published on the public website</label>
           <div className="flex flex-wrap gap-3 sm:col-span-2 lg:col-span-3">
-            <button type="submit" disabled={saving} className="btn-gold inline-flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50"><Save className="h-4 w-4" aria-hidden="true" />{saving ? 'Saving…' : 'Save residence'}</button>
+            <button type="submit" disabled={saving || uploadingImage} className="btn-gold inline-flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50"><Save className="h-4 w-4" aria-hidden="true" />{uploadingImage ? 'Uploading image…' : saving ? 'Saving…' : 'Save residence'}</button>
             <button type="button" disabled={saving} onClick={() => setEditorOpen(false)} className="btn-outline px-5 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50">Cancel</button>
           </div>
         </form>
@@ -297,7 +367,7 @@ export function AdminApartments() {
               <li key={room.slug} className="flex flex-wrap items-center justify-between gap-4 p-4 sm:px-5">
                 <div className="flex min-w-0 items-center gap-4">
                   <img src={room.photo_src} alt="" className="h-14 w-16 shrink-0 object-cover" />
-                  <div className="min-w-0"><p className="truncate font-medium text-ink-900">Room {room.number} · {room.name}</p><p className="mt-1 text-xs text-ink-500">{room.slug} · {room.published ? 'Published' : 'Unpublished'}</p></div>
+                  <div className="min-w-0"><p className="truncate font-medium text-ink-900">{room.name}</p><p className="mt-1 text-xs text-ink-500">{room.slug} · {room.published ? 'Published' : 'Unpublished'} · {room.booking_enabled ? 'Online booking enabled' : 'Online booking disabled'} · Bed details: {room.bed_configuration_verified ? 'Verified' : 'Pending Verification'} · Occupancy: {room.max_occupancy_verified ? 'Verified' : 'Pending Verification'}</p></div>
                 </div>
                 <button type="button" onClick={() => { setForm(apartmentToForm(room)); setNotice(''); setError(''); setEditorOpen(true); }} className="btn-outline px-4 py-2 text-xs uppercase tracking-[0.1em]">Edit</button>
               </li>
@@ -318,6 +388,7 @@ export function AdminCalendar({ bookings }: Pick<AdminSectionProps, 'bookings'>)
     return day > 0 && day <= days ? day : null;
   });
   const monthBookings = bookings.filter((booking) => {
+    if (booking.status === 'cancelled' || booking.status === 'expired') return false;
     const start = new Date(`${booking.check_in}T00:00:00`);
     const end = new Date(`${booking.check_out}T00:00:00`);
     const endOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
@@ -383,7 +454,7 @@ export function AdminGuests({ bookings }: Pick<AdminSectionProps, 'bookings'>) {
 
 export function AdminReports({ bookings }: Pick<AdminSectionProps, 'bookings'>) {
   const totalNights = bookings.reduce((total, booking) => {
-    if (['cancelled'].includes(booking.status)) return total;
+    if (['cancelled', 'expired'].includes(booking.status)) return total;
     const nights = (new Date(`${booking.check_out}T00:00:00`).getTime() - new Date(`${booking.check_in}T00:00:00`).getTime()) / 86_400_000;
     return total + Math.max(0, nights);
   }, 0);

@@ -1,21 +1,36 @@
 import { z } from 'zod';
 
-export const bookingStatuses = ['pending', 'awaiting_payment', 'confirmed', 'cancelled', 'checked_in', 'checked_out'] as const;
+export const bookingStatuses = ['pending', 'awaiting_payment', 'confirmed', 'cancelled', 'expired', 'checked_in', 'checked_out'] as const;
 export type BookingStatus = (typeof bookingStatuses)[number];
 export type StatusFilter = 'all' | BookingStatus;
 
-export const paymentStatuses = ['not_required', 'awaiting_payment', 'paid', 'failed', 'expired', 'paid_unassigned'] as const;
+export const paymentStatuses = ['not_required', 'not_initiated', 'awaiting_payment', 'processing', 'paid', 'failed', 'refunded', 'expired', 'paid_unassigned'] as const;
 
 export const bookingRequestSchema = z.array(
   z.object({
     id: z.string(),
+    booking_reference: z.string().nullable(),
     apartment_slug: z.string(),
     check_in: z.string(),
     check_out: z.string(),
     guests: z.number(),
+    adults: z.number(),
+    children: z.number(),
     guest_name: z.string(),
     guest_email: z.string(),
     guest_phone: z.string(),
+    guest_country: z.string().nullable(),
+    estimated_arrival_time: z.string().nullable(),
+    policies_accepted_at: z.string().nullable(),
+    policy_version: z.string().nullable(),
+    accepted_house_rule_ids: z.array(z.string()),
+    accepted_house_rules: z.array(z.object({
+      id: z.string(),
+      category: z.string(),
+      title: z.string(),
+      details: z.string(),
+      revision: z.number(),
+    })),
     notes: z.string(),
     status: z.enum(bookingStatuses),
     payment_status: z.enum(paymentStatuses),

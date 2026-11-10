@@ -38,7 +38,7 @@ function ApartmentCard({ apartment, index }: { apartment: Apartment; index: numb
         </Link>
 
         <div className="mt-6 flex items-baseline justify-between border-b border-ink-100 pb-4">
-          <p className="eyebrow">Room {apartment.number}</p>
+          <p className="eyebrow">Residence {apartment.number}</p>
           <p className="font-serif text-2xl leading-[1.2] text-ink-300">{apartment.number}</p>
         </div>
 

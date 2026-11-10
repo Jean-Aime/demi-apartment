@@ -9,7 +9,6 @@ export default function Hero() {
       <img
         src={media.hero.src}
         alt={media.hero.alt}
-        fetchPriority="high"
         className="hero-media absolute inset-0 h-full w-full object-cover opacity-50"
       />
       <div

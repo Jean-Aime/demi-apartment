@@ -23,7 +23,7 @@ export const policies: Record<Policy['slug'], Policy> = {
       {
         heading: 'Information we collect',
         paragraphs: [
-          'When you submit a booking request we collect your name, email address, phone number, stay dates, number of guests and any notes you add.',
+          'When you place a reservation hold we collect your name, email address, phone number, country of residence, stay dates, guest counts, estimated arrival time if supplied, and any special requests.',
           'We do not store payment card details on this website.',
         ],
       },
@@ -47,18 +47,18 @@ export const policies: Record<Policy['slug'], Policy> = {
     title: 'Terms and Conditions',
     eyebrow: 'Legal',
     intro:
-      'These terms apply to your use of this website and to any booking request you make with DEMI APARTMENT.',
+      'These terms apply to your use of this website and to any reservation hold you create with DEMI APARTMENT.',
     sections: [
       {
-        heading: 'Booking requests',
+        heading: 'Reservations and temporary holds',
         paragraphs: [
-          'A booking request is an enquiry. It is not a confirmed reservation until DEMI APARTMENT has confirmed availability and issued a written confirmation.',
+          'Availability is checked against the website reservation calendar. Submitting the final step creates a temporary 15-minute hold; it does not take payment or confirm your stay. Your reservation remains awaiting payment until the property confirms it.',
         ],
       },
       {
         heading: 'Accuracy of information',
         paragraphs: [
-          'Guests must provide accurate contact details and the correct number of occupants. Occupancy limits for each residence apply.',
+          'Guests must provide accurate contact details and the correct number of occupants. The maximum occupancy configured for the selected residence applies.',
         ],
       },
       {

@@ -1,45 +1,35 @@
 import { corsHeaders, getServiceClient, jsonResponse } from '../_shared/payment.ts';
 
-interface CheckoutRequest {
-  apartmentSlug: string;
-  checkIn: string;
-  checkOut: string;
-  guests: number;
-  guestName: string;
-  guestEmail: string;
-  guestPhone: string;
-  notes?: string;
+interface PreparedCheckout {
+  booking_id: string;
+  tx_ref: string;
+  amount: number | string;
+  currency: 'USD' | 'EUR';
+  apartment_name: string;
+  guest_name: string;
+  guest_email: string;
+  guest_phone: string;
+  hold_expires_at: string;
+  checkout_url: string | null;
 }
 
-interface FlutterwavePaymentResponse {
+interface FlutterwaveResponse {
   status?: string;
   data?: { link?: string };
 }
 
-function isFlutterwavePaymentResponse(value: unknown): value is FlutterwavePaymentResponse {
-  if (!value || typeof value !== 'object') return false;
-  const data = (value as Record<string, unknown>).data;
-  if (data === undefined) return true;
-  if (typeof data !== 'object' || data === null) return false;
-  const link = (data as Record<string, unknown>).link;
-  return link === undefined || typeof link === 'string';
+function isCheckoutToken(value: unknown): value is string {
+  return typeof value === 'string'
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
-function isCheckoutRequest(value: unknown): value is CheckoutRequest {
+function isFlutterwaveResponse(value: unknown): value is FlutterwaveResponse {
   if (!value || typeof value !== 'object') return false;
-  const input = value as Record<string, unknown>;
-  return (
-    typeof input.apartmentSlug === 'string' &&
-    typeof input.checkIn === 'string' &&
-    /^\d{4}-\d{2}-\d{2}$/.test(input.checkIn) &&
-    typeof input.checkOut === 'string' &&
-    /^\d{4}-\d{2}-\d{2}$/.test(input.checkOut) &&
-    typeof input.guests === 'number' &&
-    Number.isInteger(input.guests) &&
-    typeof input.guestName === 'string' &&
-    typeof input.guestEmail === 'string' &&
-    typeof input.guestPhone === 'string' &&
-    (input.notes === undefined || typeof input.notes === 'string')
+  const data = (value as Record<string, unknown>).data;
+  return data === undefined || (
+    typeof data === 'object'
+    && data !== null
+    && ((data as Record<string, unknown>).link === undefined || typeof (data as Record<string, unknown>).link === 'string')
   );
 }
 
@@ -50,115 +40,111 @@ Deno.serve(async (request) => {
 
   try {
     const body: unknown = await request.json();
-    if (!isCheckoutRequest(body)) return jsonResponse({ error: 'Booking details are incomplete.' }, 400, headers);
+    const checkoutToken = body && typeof body === 'object'
+      ? (body as Record<string, unknown>).checkoutToken
+      : undefined;
+    if (!isCheckoutToken(checkoutToken)) {
+      return jsonResponse({ error: 'This reservation link is invalid.' }, 400, headers);
+    }
 
     const secretKey = Deno.env.get('FLW_SECRET_KEY');
-    const siteUrl = Deno.env.get('SITE_URL')?.replace(/\/$/, '');
-    if (!secretKey || !siteUrl) throw new Error('Checkout is not configured.');
+    const siteUrlValue = Deno.env.get('SITE_URL');
+    if (!secretKey || !siteUrlValue) {
+      return jsonResponse({ error: 'Secure online payment is not configured yet. No payment has been taken.' }, 503, headers);
+    }
+
+    const siteUrl = new URL(siteUrlValue);
+    if (siteUrl.protocol !== 'https:' && siteUrl.hostname !== 'localhost' && siteUrl.hostname !== '127.0.0.1') {
+      return jsonResponse({ error: 'Secure online payment requires an HTTPS website address.' }, 503, headers);
+    }
 
     const client = getServiceClient();
-    const { data, error } = await client.rpc('create_booking_payment_hold', {
-      p_apartment_slug: body.apartmentSlug,
-      p_check_in: body.checkIn,
-      p_check_out: body.checkOut,
-      p_guests: body.guests,
-      p_guest_name: body.guestName,
-      p_guest_email: body.guestEmail,
-      p_guest_phone: body.guestPhone,
-      p_notes: body.notes ?? '',
+    const { data, error } = await client.rpc('prepare_flutterwave_checkout', {
+      p_checkout_token: checkoutToken,
     });
-
     if (error) {
-      if (error.code === '23P01') {
-        return jsonResponse({ error: 'Those dates are no longer available. Please choose another stay.' }, 409, headers);
-      }
       if (error.code === '22023') return jsonResponse({ error: error.message }, 400, headers);
-      if (error.code === '22007' || error.code === '22008') {
-        return jsonResponse({ error: 'Choose valid check-in and check-out dates.' }, 400, headers);
-      }
-      console.error('Booking hold creation failed:', error.code);
-      return jsonResponse({ error: 'We could not reserve these dates. Please try again.' }, 500, headers);
+      console.error('Could not prepare secure checkout:', error.code);
+      return jsonResponse({ error: 'We could not prepare secure checkout. Please refresh your reservation.' }, 500, headers);
     }
 
-    const hold = Array.isArray(data) ? data[0] : null;
-    if (!hold || typeof hold.booking_id !== 'string' || typeof hold.tx_ref !== 'string') {
-      throw new Error('Booking hold service returned an invalid response.');
+    const prepared = Array.isArray(data) ? data[0] as PreparedCheckout | undefined : undefined;
+    if (!prepared || typeof prepared.booking_id !== 'string' || typeof prepared.tx_ref !== 'string') {
+      console.error('Secure checkout preparation returned an invalid response.');
+      return jsonResponse({ error: 'We could not prepare secure checkout. Please refresh your reservation.' }, 500, headers);
     }
-    const releaseHold = async () => {
-      const { error: releaseError } = await client
-        .from('booking_requests')
-        .update({ status: 'cancelled', payment_status: 'failed' })
-        .eq('id', hold.booking_id)
-        .eq('status', 'awaiting_payment');
-      if (releaseError) console.error('Could not release an unused payment hold:', releaseError.code);
-    };
 
-    let paymentResponse: Response;
+    if (prepared.checkout_url) {
+      return jsonResponse({ checkoutUrl: prepared.checkout_url }, 200, headers);
+    }
+
+    let response: Response;
     try {
-      paymentResponse = await fetch('https://api.flutterwave.com/v3/payments', {
+      response = await fetch('https://api.flutterwave.com/v3/payments', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${secretKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          tx_ref: hold.tx_ref,
-          amount: Number(hold.amount).toFixed(2),
-          currency: hold.currency,
-          redirect_url: `${siteUrl}/booking/confirmation`,
+          tx_ref: prepared.tx_ref,
+          amount: Number(prepared.amount).toFixed(2),
+          currency: prepared.currency,
+          redirect_url: `${siteUrl.origin}/booking/checkout?token=${encodeURIComponent(checkoutToken)}`,
           customer: {
-            email: body.guestEmail,
-            name: body.guestName,
-            phonenumber: body.guestPhone,
+            email: prepared.guest_email,
+            name: prepared.guest_name,
+            phonenumber: prepared.guest_phone,
           },
           customizations: {
             title: 'DEMI APARTMENT',
-            description: `Stay at ${hold.apartment_name}`,
+            description: `Stay at ${prepared.apartment_name}`,
           },
           configurations: { session_duration: 15, max_retry_attempt: 3 },
         }),
       });
     } catch {
-      await releaseHold();
-      return jsonResponse({ error: 'Secure checkout could not be reached. Please try again.' }, 502, headers);
+      return jsonResponse({ error: 'Secure checkout could not be reached. Your room hold is still active; please try again.' }, 502, headers);
     }
 
-    let paymentPayload: FlutterwavePaymentResponse;
+    let payload: FlutterwaveResponse;
     try {
-      const payload: unknown = await paymentResponse.json();
-      if (!isFlutterwavePaymentResponse(payload)) throw new Error('Invalid checkout response.');
-      paymentPayload = payload;
+      const value: unknown = await response.json();
+      if (!isFlutterwaveResponse(value)) throw new Error('Invalid checkout response.');
+      payload = value;
     } catch {
-      await releaseHold();
-      return jsonResponse({ error: 'Secure checkout returned an invalid response. Please try again.' }, 502, headers);
+      return jsonResponse({ error: 'Secure checkout returned an invalid response. Your room hold is still active; please try again.' }, 502, headers);
     }
-    const checkoutUrl = paymentPayload.data?.link;
-    if (!paymentResponse.ok || paymentPayload.status !== 'success' || !checkoutUrl) {
-      await releaseHold();
-      console.error('Flutterwave checkout creation failed:', paymentResponse.status);
-      return jsonResponse({ error: 'Secure checkout could not be started. Please try again.' }, 502, headers);
+
+    const checkoutUrl = payload.data?.link;
+    if (!response.ok || payload.status !== 'success' || !checkoutUrl) {
+      console.error('Flutterwave checkout creation failed:', response.status);
+      return jsonResponse({ error: 'Secure checkout could not be started. Your room hold is still active; please try again.' }, 502, headers);
     }
 
     let parsedUrl: URL;
     try {
       parsedUrl = new URL(checkoutUrl);
     } catch {
-      await releaseHold();
-      return jsonResponse({ error: 'Secure checkout returned an invalid link. Please try again.' }, 502, headers);
+      return jsonResponse({ error: 'Secure checkout returned an invalid link. Please contact the property team.' }, 502, headers);
     }
     if (parsedUrl.protocol !== 'https:' || parsedUrl.hostname !== 'checkout.flutterwave.com') {
-      await releaseHold();
-      return jsonResponse({ error: 'Secure checkout returned an untrusted link. Please contact the team.' }, 502, headers);
+      return jsonResponse({ error: 'Secure checkout returned an untrusted link. Please contact the property team.' }, 502, headers);
     }
 
-    return jsonResponse({
-      checkoutUrl: parsedUrl.toString(),
-      reference: hold.tx_ref,
-      amount: Number(hold.amount),
-      currency: hold.currency,
-      apartmentName: hold.apartment_name,
-      holdExpiresAt: hold.hold_expires_at,
-    }, 200, headers);
+    const { error: saveError } = await client
+      .from('booking_requests')
+      .update({ payment_checkout_url: parsedUrl.toString() })
+      .eq('id', prepared.booking_id)
+      .eq('payment_reference', prepared.tx_ref)
+      .eq('status', 'awaiting_payment')
+      .eq('payment_status', 'awaiting_payment');
+    if (saveError) {
+      console.error('Could not save secure checkout link:', saveError.code);
+      return jsonResponse({ error: 'Secure checkout started, but we could not prepare its return link. Contact the property before trying again.' }, 500, headers);
+    }
+
+    return jsonResponse({ checkoutUrl: parsedUrl.toString() }, 200, headers);
   } catch (error) {
     console.error('Checkout request failed:', error instanceof Error ? error.message : 'Unexpected error');
     return jsonResponse({ error: 'Secure checkout is temporarily unavailable. Please try again.' }, 500, headers);

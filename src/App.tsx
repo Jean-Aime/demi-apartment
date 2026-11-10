@@ -14,6 +14,7 @@ import PolicyPage from '@/pages/PolicyPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import BookingPage from '@/pages/BookingPage';
 import BookingConfirmationPage from '@/pages/BookingConfirmationPage';
+import BookingCheckoutPage from '@/pages/BookingCheckoutPage';
 
 function PublicSiteLayout() {
   return (
@@ -43,6 +44,7 @@ function App() {
           <Route path="/terms" element={<PolicyPage slug="terms" />} />
           <Route path="/cancellation" element={<PolicyPage slug="cancellation" />} />
           <Route path="/booking" element={<BookingPage />} />
+          <Route path="/booking/checkout" element={<BookingCheckoutPage />} />
           <Route path="/booking/confirmation" element={<BookingConfirmationPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

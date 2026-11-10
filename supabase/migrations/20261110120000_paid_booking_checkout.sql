@@ -12,9 +12,6 @@ ALTER TABLE public.booking_requests
   ADD CONSTRAINT booking_requests_status_check
   CHECK (status IN ('pending', 'awaiting_payment', 'confirmed', 'cancelled', 'checked_in', 'checked_out'));
 
-DROP POLICY IF EXISTS "anon_insert_pending_booking_requests" ON public.booking_requests;
-REVOKE INSERT ON TABLE public.booking_requests FROM anon, authenticated;
-
 ALTER TABLE public.booking_requests
   ADD COLUMN IF NOT EXISTS payment_status text NOT NULL DEFAULT 'not_required'
     CHECK (payment_status IN ('not_required', 'awaiting_payment', 'paid', 'failed', 'expired', 'paid_unassigned')),
@@ -24,6 +21,17 @@ ALTER TABLE public.booking_requests
   ADD COLUMN IF NOT EXISTS hold_expires_at timestamptz,
   ADD COLUMN IF NOT EXISTS total_amount numeric(12, 2),
   ADD COLUMN IF NOT EXISTS currency text CHECK (currency IS NULL OR currency IN ('USD', 'EUR'));
+
+GRANT INSERT ON TABLE public.booking_requests TO anon, authenticated;
+
+DROP POLICY IF EXISTS "anon_insert_pending_booking_requests" ON public.booking_requests;
+CREATE POLICY "anon_insert_pending_booking_requests" ON public.booking_requests
+  FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (
+    status = 'pending'
+    AND payment_status = 'not_required'
+  );
 
 CREATE UNIQUE INDEX IF NOT EXISTS booking_requests_payment_reference_idx
   ON public.booking_requests (payment_reference)
@@ -240,7 +248,8 @@ AS $$
 BEGIN
   IF NEW.status IN ('confirmed', 'checked_in', 'checked_out')
     AND OLD.status NOT IN ('confirmed', 'checked_in', 'checked_out')
-    AND NEW.payment_status NOT IN ('paid', 'paid_unassigned') THEN
+    AND NEW.payment_status NOT IN ('paid', 'paid_unassigned')
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') IS DISTINCT FROM 'admin' THEN
     RAISE EXCEPTION 'A booking cannot be confirmed until its payment is verified.' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
