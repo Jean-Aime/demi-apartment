@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
-import { navigation } from '@/data/site';
 import { useIsScrolled } from '@/hooks/useIsScrolled';
 import BrandMark from '@/components/layout/BrandMark';
 import MobileMenu from '@/components/layout/MobileMenu';
@@ -16,69 +15,49 @@ export default function SiteHeader() {
     closeMenu();
   }, [pathname, closeMenu]);
 
-  useEffect(() => {
-    const onResize = () => {
-      if (window.matchMedia('(min-width: 1024px)').matches) setMenuOpen(false);
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
   const solid = scrolled || menuOpen;
 
   return (
     <>
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition-[background-color,color,box-shadow,border-color] duration-500 ${
+        className={`fixed inset-x-0 top-0 z-50 border-b transition-[background-color,color,box-shadow,border-color] duration-500 ${
           solid
-            ? 'bg-paper/95 text-ink-900 shadow-[0_1px_0_0_rgba(184,149,74,0.2)] backdrop-blur-md'
-            : 'bg-transparent text-paper'
+            ? 'border-ink-100/70 bg-paper/90 text-ink-900 shadow-[0_8px_30px_rgba(14,13,11,0.04)] backdrop-blur-xl'
+            : 'border-paper/10 bg-ink-900/10 text-paper backdrop-blur-[2px]'
         }`}
       >
-        <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-6 md:px-12 lg:px-16">
+        <div className="mx-auto flex h-[5.5rem] max-w-[1440px] items-center justify-between px-5 sm:px-6 md:px-12 lg:px-16">
           <BrandMark light={!solid} />
 
-          <nav aria-label="Primary" className="hidden lg:block">
-            <ul className="flex items-center gap-10">
-              {navigation.map((item) => (
-                <li key={item.to}>
-                  <NavLink
-                    to={item.to}
-                    className={`link-line ${solid ? 'text-ink-500' : 'text-paper'}`}
-                  >
-                    {item.label}
-                  </NavLink>
-                </li>
-              ))}
-              <li>
-                <Link
-                  to="/booking"
-                  className={`inline-flex items-center px-5 py-2.5 text-xs font-medium uppercase tracking-[0.18em] ${
-                    solid
-                      ? 'btn-outline'
-                      : 'border border-paper/50 text-paper transition-colors duration-500 hover:border-gold hover:text-gold'
-                  }`}
-                >
-                  Reserve
-                </Link>
-              </li>
-            </ul>
-          </nav>
-
-          <button
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-expanded={menuOpen}
-            aria-controls="mobile-menu"
-            className="flex h-11 w-11 items-center justify-center transition-colors duration-500 hover:text-gold lg:hidden"
-          >
-            <span className="sr-only">{menuOpen ? 'Close menu' : 'Open menu'}</span>
-            {menuOpen ? (
-              <X className="h-6 w-6" strokeWidth={1.25} aria-hidden="true" />
-            ) : (
-              <Menu className="h-6 w-6" strokeWidth={1.25} aria-hidden="true" />
-            )}
-          </button>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link
+              to="/booking"
+              className={`hidden items-center px-5 py-3 text-[0.65rem] font-semibold uppercase tracking-[0.18em] transition-all duration-500 sm:inline-flex ${
+                solid
+                  ? 'btn-outline border-ink-300/70 text-ink-800'
+                  : 'border border-paper/55 text-paper hover:border-gold-light hover:bg-paper/10 hover:text-gold-light'
+              }`}
+            >
+              Book now
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={menuOpen}
+              aria-controls="site-navigation"
+              className={`flex h-11 w-11 items-center justify-center border transition-all duration-500 hover:border-gold hover:text-gold ${
+                menuOpen ? 'border-gold text-gold' : solid ? 'border-ink-200 text-ink-900' : 'border-paper/40 text-paper'
+              }`}
+            >
+              <span className="sr-only">{menuOpen ? 'Close menu' : 'Open menu'}</span>
+              {menuOpen ? (
+                <X className="h-5 w-5" strokeWidth={1.25} aria-hidden="true" />
+              ) : (
+                <Menu className="h-5 w-5" strokeWidth={1.25} aria-hidden="true" />
+              )}
+            </button>
+          </div>
         </div>
       </header>
 

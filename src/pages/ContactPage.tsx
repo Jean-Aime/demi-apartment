@@ -29,7 +29,7 @@ export default function ContactPage() {
         image={media.kigali}
       />
 
-      <section className="bg-paper py-16 md:py-24">
+      <section className="bg-paper py-20 md:py-28">
         <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
           <div className="grid gap-12 md:grid-cols-3 md:gap-x-8">
             {channels.map((channel, index) => (
@@ -38,9 +38,9 @@ export default function ContactPage() {
                   href={channel.href}
                   target={channel.href.startsWith('http') ? '_blank' : undefined}
                   rel={channel.href.startsWith('http') ? 'noreferrer' : undefined}
-                  className="group block border-t border-ink-100 pt-8 transition-colors duration-500 hover:border-gold"
+                  className="group block min-h-52 border border-ink-100/80 bg-paper-warm/55 p-6 transition-all duration-500 hover:-translate-y-1 hover:border-gold/50 hover:bg-paper-warm sm:p-8"
                 >
-                  <channel.icon className="h-5 w-5 text-gold" strokeWidth={1.5} aria-hidden="true" />
+                  <channel.icon className="h-5 w-5 text-gold-deep transition-transform duration-500 group-hover:-translate-y-0.5" strokeWidth={1.5} aria-hidden="true" />
                   <p className="eyebrow mt-6">{channel.label}</p>
                     <p className="mt-4 flex items-start gap-2 font-serif text-xl leading-[1.2] text-ink-900 sm:text-2xl">
                       <span className="min-w-0 break-words">{channel.value}</span>
@@ -54,14 +54,17 @@ export default function ContactPage() {
         </div>
       </section>
 
-      <section className="bg-paper-warm py-16 md:py-24">
+      <section className="bg-paper-warm py-20 md:py-28">
         <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
           <div className="grid gap-16 md:grid-cols-12 md:gap-x-8">
             <div className="md:col-span-4">
               <Reveal>
-                <p className="eyebrow">Location</p>
-                <h2 className="display mt-6 text-[clamp(2.5rem,5vw,4.25rem)] text-ink-900">
-                  Kimironko, <span className="italic text-gold">Kigali.</span>
+                <p className="eyebrow inline-flex items-center gap-3">
+                  <span className="h-px w-8 bg-gold/70" aria-hidden="true" />
+                  Location
+                </p>
+                <h2 className="display mt-7 text-[clamp(2.8rem,5vw,4.5rem)] text-ink-900">
+                  Kimironko, <span className="italic text-gold-deep">Kigali.</span>
                 </h2>
                 <p className="mt-8 text-base text-ink-500 md:text-lg">
                   DEMI APARTMENT sits in Kimironko, Kigali, offering the privacy of a residence with the city within reach.
@@ -82,7 +85,7 @@ export default function ContactPage() {
             </div>
 
             <Reveal delay={200} className="md:col-span-7 md:col-start-6">
-              <div className="relative aspect-[4/3] overflow-hidden bg-paper-muted sm:aspect-[16/10] md:aspect-auto md:h-[560px]">
+              <div className="relative aspect-[4/3] overflow-hidden border border-paper bg-paper-muted shadow-[0_24px_70px_rgba(14,13,11,0.12)] sm:aspect-[16/10] md:aspect-auto md:h-[560px]">
                 <iframe
                   src={MAP_EMBED_URL}
                   title="Map of Kimironko, Kigali"

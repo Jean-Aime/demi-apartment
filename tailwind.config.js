@@ -5,10 +5,10 @@ export default {
     extend: {
       colors: {
         gold: {
-          DEFAULT: '#B8954A',
+          DEFAULT: '#A78645',
           light: '#D4B068',
-          soft: '#A88542',
-          deep: '#7A6028',
+          soft: '#92753C',
+          deep: '#705723',
         },
         ink: {
           DEFAULT: '#1A1815',
@@ -23,9 +23,9 @@ export default {
           100: '#D8D2C6',
         },
         paper: {
-          DEFAULT: '#FFFFFF',
-          warm: '#F8F6F1',
-          muted: '#EFEAE0',
+          DEFAULT: '#FAF8F3',
+          warm: '#F3EFE7',
+          muted: '#E8E2D8',
         },
       },
       fontFamily: {

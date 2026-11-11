@@ -48,7 +48,7 @@ export default function HomeStayGuide() {
 
   return (
     <>
-      <section className="bg-paper py-16 md:py-24">
+      <section className="bg-paper py-20 md:py-28">
         <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
           <div className="grid gap-12 md:grid-cols-12 md:gap-x-8">
             <Reveal className="md:col-span-4">
@@ -60,8 +60,8 @@ export default function HomeStayGuide() {
 
             <div className="grid gap-8 sm:grid-cols-3 md:col-span-7 md:col-start-6">
               {guestHighlights.map((highlight, index) => (
-                <Reveal key={highlight.title} delay={index * 100} className="border-t border-ink-200 pt-6">
-                  <highlight.icon className="h-5 w-5 text-gold" strokeWidth={1.5} aria-hidden="true" />
+                <Reveal key={highlight.title} delay={index * 100} className="group border-t border-gold/40 bg-paper-warm/55 p-5 transition-colors duration-500 hover:bg-paper-warm sm:p-6">
+                    <highlight.icon className="h-5 w-5 text-gold-deep transition-transform duration-500 group-hover:-translate-y-1" strokeWidth={1.5} aria-hidden="true" />
                   <h3 className="mt-5 font-serif text-2xl text-ink-900">{highlight.title}</h3>
                   <p className="mt-3 text-sm leading-relaxed text-ink-500">{highlight.description}</p>
                   <Link to={highlight.link.to} className="link-line mt-6 text-xs text-ink-800">
@@ -75,11 +75,11 @@ export default function HomeStayGuide() {
         </div>
       </section>
 
-      <section className="bg-paper-warm py-16 md:py-24">
+      <section className="bg-paper-warm py-20 md:py-28">
         <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
           <div className="grid gap-12 md:grid-cols-12 md:items-center md:gap-x-8">
             <Reveal className="md:col-span-5">
-              <figure className="media-frame aspect-[4/5] overflow-hidden">
+              <figure className="media-frame aspect-[4/5] overflow-hidden bg-paper-muted">
                 <img
                   src={featuredApartment.photo.src}
                   alt={featuredApartment.photo.alt}
@@ -104,7 +104,7 @@ export default function HomeStayGuide() {
               <ol className="mt-10 space-y-6">
                 {planningSteps.map((step, index) => (
                   <Reveal key={step.number} delay={index * 100} className="flex gap-5 border-t border-ink-200 pt-5">
-                    <span className="font-serif text-2xl text-gold">{step.number}</span>
+                    <span className="font-serif text-2xl tabular-nums text-gold-deep">{step.number}</span>
                     <div>
                       <h3 className="font-serif text-xl text-ink-900">{step.title}</h3>
                       <p className="mt-2 text-sm leading-relaxed text-ink-500">{step.description}</p>

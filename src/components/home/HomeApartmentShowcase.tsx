@@ -2,6 +2,7 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Reveal from '@/components/Reveal';
 import { useApartments } from '@/hooks/useApartments';
+import { getApartmentPath } from '@/lib/apartmentRoutes';
 
 export default function HomeApartmentShowcase() {
   const { apartments } = useApartments();
@@ -28,7 +29,7 @@ export default function HomeApartmentShowcase() {
         <div className="mt-10 grid gap-6 md:grid-cols-12">
           <Reveal className="md:col-span-7">
             <Link
-              to={`/apartments/${featuredRooms[0].slug}`}
+              to={getApartmentPath(featuredRooms[0])}
               className="group relative block min-h-[430px] overflow-hidden bg-ink-800 md:h-full md:min-h-[590px]"
             >
               <img
@@ -56,7 +57,7 @@ export default function HomeApartmentShowcase() {
             {featuredRooms.slice(1).map((room, index) => (
               <Reveal key={room.slug} delay={(index + 1) * 120}>
               <Link
-                to={`/apartments/${room.slug}`}
+                to={getApartmentPath(room)}
                 className="group relative block min-h-[300px] overflow-hidden bg-ink-800 md:min-h-[282px]"
               >
                 <img

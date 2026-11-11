@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Clock3, Loader2, Search, ShieldCheck } from 'lucide-react';
 import type { Apartment } from '@/data/apartments';
+import { getApartmentPath } from '@/lib/apartmentRoutes';
 import DateRangeCalendar from '@/components/booking/DateRangeCalendar';
 import {
   MAX_GUESTS,
@@ -31,8 +32,7 @@ type SearchResult = {
   reason?: string;
 };
 
-const fieldClass =
-  'mt-3 w-full min-w-0 border-0 border-b border-ink-100 bg-transparent px-0 py-3 font-sans text-base text-ink-900 placeholder:text-ink-300 transition-colors duration-500 focus:border-gold focus:outline-none aria-[invalid=true]:border-[#C75D4A]';
+const fieldClass = 'booking-field';
 const labelClass = 'block text-xs font-medium uppercase tracking-[0.2em] text-ink-500';
 function Field({ id, label, error, children }: { id: string; label: string; error?: string; children: ReactNode }) {
   return (
@@ -255,7 +255,7 @@ export default function BookingForm({
   }
 
   return (
-    <div className="min-w-0 space-y-8" aria-label="Reservation">
+    <div className="booking-form min-w-0 space-y-8" aria-label="Reservation">
       <ol aria-label="Reservation progress" className="grid grid-cols-5 border-y border-ink-100 py-4">
         {steps.map((label, index) => {
           const current = index + 1;
@@ -553,7 +553,7 @@ export default function BookingForm({
             <button type="button" onClick={() => setStep(6)} className="btn-gold inline-flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-[0.12em]">
               Continue to payment <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </button>
-            <Link to={`/apartments/${selectedApartment.slug}`} className="btn-outline px-5 py-3 text-xs uppercase tracking-[0.12em]">Back to {selectedApartment.name}</Link>
+            <Link to={getApartmentPath(selectedApartment)} className="btn-outline px-5 py-3 text-xs uppercase tracking-[0.12em]">Back to {selectedApartment.name}</Link>
           </div>
         </section>
       )}

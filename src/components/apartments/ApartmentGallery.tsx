@@ -13,17 +13,22 @@ export default function ApartmentGallery({ roomName, photos }: ApartmentGalleryP
   const close = useCallback(() => setActiveIndex(null), []);
 
   return (
-    <section aria-label={`${roomName} photo gallery`} className="bg-paper-warm py-16 md:py-20">
+    <section id="room-gallery" aria-label={`${roomName} photo gallery`} className="scroll-mt-24 border-y border-ink-100/60 bg-paper-warm py-16 md:py-24">
       <div className="mx-auto max-w-[1440px] px-5 sm:px-6 md:px-12 lg:px-16">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow">Room photographs</p>
+            <p className="eyebrow inline-flex items-center gap-3">
+              <span className="h-px w-8 bg-gold/70" aria-hidden="true" />
+              A closer look
+            </p>
             <h2 className="display mt-3 text-3xl text-ink-900 md:text-4xl">{roomName}</h2>
           </div>
-          <p className="text-sm text-ink-500">{photos.length} photographs</p>
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-ink-500">
+            {String(photos.length).padStart(2, '0')} photographs
+          </p>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-12">
+        <div className="grid gap-3 border border-ink-100 bg-paper p-2 sm:gap-4 sm:p-3 md:grid-cols-12">
           {photos.map((photo, index) => (
             <Reveal
               key={photo.src}
@@ -46,8 +51,8 @@ export default function ApartmentGallery({ roomName, photos }: ApartmentGalleryP
                   loading={index === 0 ? 'eager' : 'lazy'}
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                 />
-                <span className="absolute bottom-3 right-3 bg-ink-900/75 px-3 py-2 text-[0.6rem] uppercase tracking-[0.16em] text-paper">
-                  View photo
+                <span className="absolute bottom-3 right-3 border border-paper/20 bg-ink-900/80 px-3 py-2 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-paper">
+                  View {String(index + 1).padStart(2, '0')}
                 </span>
               </button>
             </Reveal>

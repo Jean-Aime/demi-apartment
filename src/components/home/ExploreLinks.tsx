@@ -41,23 +41,23 @@ export default function ExploreLinks() {
           </div>
         </Reveal>
 
-        <nav aria-label="Explore DEMI APARTMENT" className="mt-12 border-t border-ink-200">
-          <ul className="grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
+        <nav aria-label="Explore DEMI APARTMENT" className="mt-12">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {destinations.map((destination, index) => (
             <li key={destination.to}>
               <Reveal delay={index * 80}>
                 <Link
                   to={destination.to}
-                  className="group flex min-h-36 items-start justify-between gap-5 border-b border-ink-200 py-7 transition-colors hover:border-gold"
+                  className="group flex min-h-60 items-start justify-between gap-5 border border-ink-100 bg-paper/70 p-6 transition-all duration-500 hover:-translate-y-1 hover:border-gold/50 hover:bg-paper sm:p-8"
                 >
                   <span>
-                    <span className="eyebrow">{destination.eyebrow}</span>
-                    <span className="display mt-3 block text-2xl text-ink-900 transition-colors group-hover:text-gold">
+                    <span className="eyebrow tabular-nums">{destination.eyebrow} / 03</span>
+                    <span className="display mt-7 block text-2xl text-ink-900 transition-colors group-hover:text-gold-deep sm:text-3xl">
                       {destination.title}
                     </span>
-                    <span className="mt-2 block max-w-xs text-sm leading-relaxed text-ink-500">{destination.body}</span>
+                    <span className="mt-3 block max-w-xs text-sm leading-relaxed text-ink-500">{destination.body}</span>
                   </span>
-                  <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-gold transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
+                  <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-gold-deep transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
                 </Link>
               </Reveal>
             </li>

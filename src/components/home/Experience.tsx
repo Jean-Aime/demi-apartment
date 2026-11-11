@@ -22,14 +22,17 @@ const pillars = [
 
 export default function Experience() {
   return (
-    <section className="bg-paper py-20 md:py-28">
+    <section className="bg-paper py-20 md:py-32">
       <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
         <div className="grid gap-16 md:grid-cols-12 md:gap-x-8">
           <div className="md:col-span-5">
             <Reveal>
-              <p className="eyebrow">The details of a stay</p>
-              <h2 className="display mt-6 text-[clamp(2.5rem,5vw,4.75rem)] text-ink-900">
-                Comfort in the <span className="italic text-gold">details.</span>
+              <p className="eyebrow inline-flex items-center gap-3">
+                <span className="h-px w-8 bg-gold/70" aria-hidden="true" />
+                The details of a stay
+              </p>
+              <h2 className="display mt-7 text-[clamp(2.8rem,5vw,5rem)] text-ink-900">
+                Comfort in the <span className="italic text-gold-deep">details.</span>
               </h2>
             </Reveal>
             <Reveal delay={150}>
@@ -44,8 +47,8 @@ export default function Experience() {
             <Reveal delay={100}>
               <ol className="grid gap-x-10 gap-y-12 sm:grid-cols-2">
                 {pillars.map((pillar, index) => (
-                  <li key={pillar.title} className="border-t border-ink-100 pt-6">
-                    <span className="font-serif text-lg text-gold">0{index + 1}</span>
+                  <li key={pillar.title} className="border-t border-gold/30 pt-6">
+                    <span className="font-serif text-lg tabular-nums text-gold-deep">0{index + 1}</span>
                     <h3 className="mt-3 font-serif text-2xl leading-[1.2] text-ink-900">{pillar.title}</h3>
                     <p className="mt-3 text-sm leading-[1.5] text-ink-500">{pillar.body}</p>
                   </li>
@@ -55,8 +58,8 @@ export default function Experience() {
           </div>
         </div>
 
-        <div className="mt-16 grid gap-8 md:mt-24 md:grid-cols-12 md:items-start">
-          <Reveal className="md:col-span-7">
+        <div className="mt-16 grid gap-8 md:mt-28 md:grid-cols-12 md:items-start">
+          <Reveal className="media-frame md:col-span-7">
             <figure className="media-frame">
               <div className="aspect-[4/3] overflow-hidden">
                 <img

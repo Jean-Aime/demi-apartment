@@ -9,13 +9,13 @@ export default function ApartmentsPage() {
   return (
     <main>
       <PageHeader
-        eyebrow="The collection"
+        eyebrow="The residences"
         title={
           <>
-            Find the right <span className="italic text-gold">room</span> for your stay.
+            A private collection of <span className="italic text-gold">considered stays.</span>
           </>
         }
-        intro={`Explore all ${apartments.length} residences. Open any room to browse its photo gallery, stay details and amenities.`}
+        intro={`Explore ${apartments.length} individual residences in Kimironko, Kigali. Discover each room’s photographs, details and amenities.`}
         image={media.introWide}
       />
       <ApartmentCollection />

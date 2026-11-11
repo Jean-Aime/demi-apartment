@@ -7,10 +7,12 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
   }
 
   body {
     @apply bg-paper font-sans leading-[1.5] text-ink-800;
+    background-image: radial-gradient(ellipse at 50% 0%, rgba(184, 149, 74, 0.035), transparent 40rem);
   }
 
   ::selection {
@@ -24,20 +26,24 @@
 
 @layer components {
   .eyebrow {
-    @apply font-sans text-xs font-medium uppercase tracking-[0.28em] text-gold;
+    @apply font-sans text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-gold-deep;
   }
 
   .display {
-    @apply font-serif font-normal leading-[1.2] tracking-[-0.01em];
+    @apply font-serif font-normal leading-[1.08] tracking-[-0.025em];
+  }
+
+  .page-title {
+    text-wrap: balance;
   }
 
   .link-line {
-    @apply relative inline-flex items-center gap-2 pb-1 text-sm font-medium uppercase tracking-[0.18em] text-ink-500 transition-colors duration-500;
+    @apply relative inline-flex items-center gap-2 pb-1 text-xs font-semibold uppercase tracking-[0.18em] text-ink-500 transition-colors duration-500;
     background-image: linear-gradient(currentColor, currentColor);
     background-size: 0% 1px;
     background-position: 0 100%;
     background-repeat: no-repeat;
-    transition: background-size 0.6s cubic-bezier(0.2, 0.7, 0.1, 1), color 0.4s ease;
+    transition: background-size 0.6s cubic-bezier(0.2, 0.7, 0.1, 1), color 0.4s ease, transform 0.4s ease;
   }
 
   .link-line:hover,
@@ -48,29 +54,29 @@
   }
 
   .btn-gold {
-    @apply border border-gold/40 bg-gold-deep text-paper transition-all duration-500;
+    @apply border border-gold-deep bg-gold-deep text-paper shadow-[0_8px_24px_rgba(87,67,31,0.12)] transition-all duration-500;
   }
 
   .btn-gold:hover,
   .btn-gold:focus-visible {
-    @apply border-gold bg-gold text-ink-900;
+    @apply -translate-y-0.5 border-gold bg-gold text-ink-900 shadow-[0_12px_30px_rgba(87,67,31,0.2)];
   }
 
   .btn-outline {
-    @apply border border-ink-200 text-ink-700 transition-all duration-500;
+    @apply border border-ink-200 bg-transparent text-ink-700 transition-all duration-500;
   }
 
   .btn-outline:hover,
   .btn-outline:focus-visible {
-    @apply border-gold text-gold;
+    @apply -translate-y-0.5 border-gold bg-gold/5 text-gold-deep;
   }
 
   .reveal {
     opacity: 0;
-    transform: translate3d(0, 32px, 0);
+    transform: translate3d(0, 24px, 0);
     transition:
-      opacity 1.2s cubic-bezier(0.2, 0.7, 0.1, 1) var(--reveal-delay, 0ms),
-      transform 1.2s cubic-bezier(0.2, 0.7, 0.1, 1) var(--reveal-delay, 0ms);
+      opacity 0.85s cubic-bezier(0.2, 0.7, 0.1, 1) var(--reveal-delay, 0ms),
+      transform 0.85s cubic-bezier(0.2, 0.7, 0.1, 1) var(--reveal-delay, 0ms);
   }
 
   .reveal.is-visible {
@@ -79,15 +85,36 @@
   }
 
   .media-frame img {
-    transition: transform 1.6s cubic-bezier(0.2, 0.7, 0.1, 1);
+    transition: transform 1.2s cubic-bezier(0.2, 0.7, 0.1, 1), filter 0.8s ease;
   }
 
   .media-frame:hover img {
-    transform: scale(1.04);
+    transform: scale(1.035);
   }
 
   .hero-media {
-    animation: hero-zoom 2.4s cubic-bezier(0.2, 0.7, 0.1, 1) both;
+    animation: hero-zoom 2.8s cubic-bezier(0.2, 0.7, 0.1, 1) both;
+  }
+
+  .page-header-media {
+    animation: hero-zoom 1.8s cubic-bezier(0.2, 0.7, 0.1, 1) both;
+  }
+
+  .editorial-rule {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(184, 149, 74, 0.8), rgba(184, 149, 74, 0.12) 65%, transparent);
+  }
+
+  .booking-field {
+    @apply mt-3 w-full min-w-0 border-0 border-b border-ink-200 bg-paper/70 px-4 py-3 font-sans text-base text-ink-900 transition-colors duration-300 placeholder:text-ink-300 focus:border-gold focus:outline-none aria-[invalid=true]:border-[#C75D4A];
+  }
+
+  .booking-field:focus {
+    box-shadow: 0 1px 0 theme('colors.gold.DEFAULT');
+  }
+
+  .booking-form input[type='checkbox'] {
+    accent-color: theme('colors.gold.deep');
   }
 
   @keyframes hero-zoom {

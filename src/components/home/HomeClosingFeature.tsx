@@ -5,10 +5,10 @@ import Reveal from '@/components/Reveal';
 
 export default function HomeClosingFeature() {
   return (
-    <section className="bg-paper py-16 md:py-24">
+    <section className="bg-paper py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
-        <div className="grid overflow-hidden bg-paper-warm md:min-h-[520px] md:grid-cols-2">
-          <Reveal className="media-frame min-h-[320px] overflow-hidden md:min-h-full">
+        <div className="relative grid overflow-hidden border border-gold/15 bg-paper-warm md:min-h-[540px] md:grid-cols-2">
+          <Reveal className="media-frame min-h-[320px] overflow-hidden bg-paper-muted md:min-h-full">
             <img
               src={media.experienceSmall.src}
               alt={media.experienceSmall.alt}
@@ -19,9 +19,12 @@ export default function HomeClosingFeature() {
 
           <div className="flex items-center px-8 py-12 md:px-12 lg:px-20">
             <Reveal delay={120}>
-              <p className="eyebrow">A place to settle in</p>
-              <h2 className="display mt-6 text-[clamp(2.5rem,5vw,4.5rem)] text-ink-900">
-                Make room for <span className="italic text-gold">your stay.</span>
+              <p className="eyebrow inline-flex items-center gap-3">
+                <span className="h-px w-8 bg-gold/70" aria-hidden="true" />
+                A place to settle in
+              </p>
+              <h2 className="display mt-7 text-[clamp(2.8rem,5vw,4.8rem)] text-ink-900">
+                Make room for <span className="italic text-gold-deep">your stay.</span>
               </h2>
               <p className="mt-6 max-w-md text-base leading-relaxed text-ink-500">
                 Take a closer look at the rooms, then send the team your preferred dates. They will review your request and follow up with you.

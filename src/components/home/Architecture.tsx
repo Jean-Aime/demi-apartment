@@ -3,18 +3,21 @@ import Reveal from '@/components/Reveal';
 
 export default function Architecture() {
   return (
-    <section className="relative overflow-hidden bg-paper py-20 text-ink-900 md:py-28">
+    <section className="relative overflow-hidden bg-paper-warm py-20 text-ink-900 md:py-32">
       <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
         <Reveal>
-          <p className="eyebrow">Architecture and interiors</p>
-          <h2 className="display mt-6 max-w-3xl text-[clamp(2.5rem,5vw,4.75rem)] text-ink-900">
-            Proportion, light and <span className="italic text-gold">material.</span>
+          <p className="eyebrow inline-flex items-center gap-3">
+            <span className="h-px w-8 bg-gold/70" aria-hidden="true" />
+            Architecture and interiors
+          </p>
+          <h2 className="display mt-7 max-w-3xl text-[clamp(2.8rem,5vw,5rem)] text-ink-900">
+            Proportion, light and <span className="italic text-gold-deep">material.</span>
           </h2>
         </Reveal>
 
         <div className="relative mt-16 md:mt-20">
           <Reveal>
-            <figure className="media-frame">
+            <figure className="media-frame bg-paper-muted">
               <div className="aspect-[4/3] overflow-hidden md:aspect-[21/9]">
                 <img
                   src={media.architecture.src}
@@ -28,7 +31,7 @@ export default function Architecture() {
           </Reveal>
 
           <Reveal delay={200} className="mt-10 md:absolute md:-bottom-[14%] md:right-[8%] md:mt-0 md:w-[28%]">
-            <figure className="media-frame border-[10px] border-paper bg-paper">
+            <figure className="media-frame border-[10px] border-paper-warm bg-paper-warm shadow-[0_24px_70px_rgba(14,13,11,0.12)]">
               <div className="aspect-[4/5] overflow-hidden">
                 <img
                   src={media.architectureDetail.src}
@@ -43,7 +46,7 @@ export default function Architecture() {
 
         <div className="mt-28 grid gap-16 md:mt-40 md:grid-cols-12 md:items-end">
           <Reveal className="md:col-span-5 md:col-start-2">
-            <figure className="media-frame">
+            <figure className="media-frame bg-paper-muted">
               <div className="aspect-[4/3] overflow-hidden">
                 <img
                   src={media.architectureSide.src}
