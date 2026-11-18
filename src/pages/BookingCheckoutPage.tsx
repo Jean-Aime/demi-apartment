@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Clock3, CreditCard, Landmark, RefreshCw, ShieldCheck } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
+import BookingProgress from '@/components/booking/BookingProgress';
 import Reveal from '@/components/Reveal';
 import { media } from '@/data/media';
 import {
@@ -164,14 +165,9 @@ export default function BookingCheckoutPage() {
       />
       <section className="bg-paper py-16 md:py-24">
         <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
-          <ol aria-label="Reservation progress" className="mb-12 grid grid-cols-5 border-y border-ink-100 py-4">
-            {['Search', 'Residence', 'Your details', 'Review', 'Payment'].map((label, index) => (
-              <li key={label} aria-current={index === 4 ? 'step' : undefined} className="flex flex-col items-center gap-2 text-center">
-                <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs ${index === 4 ? 'bg-ink-900 text-paper' : 'bg-paper-warm text-ink-400'}`}>{index + 1}</span>
-                <span className={`text-[0.55rem] uppercase tracking-[0.08em] sm:text-[0.65rem] ${index === 4 ? 'font-medium text-ink-900' : 'text-ink-400'}`}>{label}</span>
-              </li>
-            ))}
-          </ol>
+          <div className="mb-12">
+            <BookingProgress steps={['Search', 'Residence', 'Your details', 'Review', 'Payment']} step={5} />
+          </div>
         </div>
         <div className="mx-auto grid max-w-[1440px] gap-12 px-6 md:grid-cols-12 md:gap-x-8 md:px-12 lg:px-16">
           <Reveal className="md:col-span-7">
@@ -202,11 +198,11 @@ export default function BookingCheckoutPage() {
                   <div><dt className="eyebrow">Payment status</dt><dd className="mt-2 text-sm font-medium uppercase tracking-wide text-amber-800">{reservation.payment_status.replace('_', ' ')}</dd></div>
                 </dl>
 
-                <div className="border border-ink-100 bg-paper-warm p-5 sm:p-7">
+                <div className="border border-ink-200/70 bg-paper-warm p-5 sm:p-7">
                   <div className="flex items-start gap-4">
                     <Clock3 className="mt-1 h-5 w-5 shrink-0 text-gold" aria-hidden="true" />
                     <div className="min-w-0">
-                      <h2 className="font-serif text-2xl text-ink-900">
+                      <h2 className="display text-[1.6rem] text-ink-900">
                         {isExpired ? 'The temporary hold has expired' : isConfirmed ? 'Reservation confirmed' : isPaidUnassigned ? 'Payment received — property review needed' : 'Awaiting payment'}
                       </h2>
                       {reservation.reservation_status === 'awaiting_payment' && !isExpired && (
@@ -229,7 +225,7 @@ export default function BookingCheckoutPage() {
                 </div>
 
                 <div className="border border-ink-100 p-5 sm:p-7">
-                  <h3 className="font-serif text-2xl text-ink-900">Price summary</h3>
+                  <h3 className="display text-[1.6rem] text-ink-900">Price summary</h3>
                   <div className="mt-5 flex justify-between gap-4 text-sm text-ink-600">
                     <span>{nights} nights × {reservation.nightly_rate && reservation.currency ? formatMoney(reservation.nightly_rate, reservation.currency) : 'Rate unavailable'}</span>
                     <span>{reservation.total_amount !== null && reservation.currency ? formatMoney(reservation.total_amount, reservation.currency) : 'To be confirmed'}</span>
@@ -245,7 +241,7 @@ export default function BookingCheckoutPage() {
                   <section className="space-y-4" aria-labelledby="payment-method-title">
                     <div>
                       <p className="eyebrow">Secure payment</p>
-                      <h2 id="payment-method-title" className="mt-2 font-serif text-2xl text-ink-900">Choose how to pay</h2>
+                      <h2 id="payment-method-title" className="display mt-2 text-[1.6rem] text-ink-900">Choose how to pay</h2>
                       <p className="mt-2 text-sm text-ink-500">Your dates are held until the timer expires. Payment is handled outside this website.</p>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">

@@ -1,51 +1,44 @@
 import { Link } from 'react-router-dom';
 
-const LOGO_SRC = '/logo.jpeg';
-const LOGO_WIDTH = 1280;
-const LOGO_HEIGHT = 764;
-
 interface BrandMarkProps {
   light?: boolean;
   size?: 'sm' | 'lg';
 }
 
+/**
+ * Typographic wordmark. The supplied logo file is a full contact card and is
+ * illegible at header scale, so it is retained unchanged as the site icon
+ * (/logo.jpeg) while the brand name is set in the display serif here.
+ */
 export default function BrandMark({ light = false, size = 'sm' }: BrandMarkProps) {
   const isLarge = size === 'lg';
 
   return (
     <Link
       to="/"
-      className={`group inline-flex items-center gap-3 sm:gap-4 ${light ? 'text-paper' : 'text-ink-900'}`}
+      className={`group inline-flex flex-col ${light ? 'text-paper' : 'text-ink-900'}`}
       aria-label="DEMI APARTMENT, home"
     >
       <span
-        className={`shrink-0 border border-gold/50 transition-colors duration-700 group-hover:border-gold ${
-          isLarge ? 'p-1' : 'p-0.5'
+        className={`font-display leading-none tracking-[0.26em] transition-colors duration-500 group-hover:text-gold-bronze ${
+          isLarge ? 'text-[2rem]' : 'text-[1.4rem]'
         }`}
       >
-        <img
-          src={LOGO_SRC}
-          alt="DeMi Apartment"
-          width={LOGO_WIDTH}
-          height={LOGO_HEIGHT}
-          decoding="async"
-          className={`w-auto object-contain ${isLarge ? 'h-16' : 'h-11'}`}
-        />
+        DEMI
       </span>
-      <span className="flex flex-col leading-none">
+      <span className="mt-1.5 flex items-center gap-2.5">
         <span
-          className={`font-serif tracking-[0.2em] transition-colors duration-500 group-hover:text-gold-deep ${
-            isLarge ? 'text-2xl' : 'text-xl'
-          }`}
-        >
-          DEMI
-        </span>
+          aria-hidden="true"
+          className={`h-px transition-all duration-700 group-hover:w-7 ${
+            isLarge ? 'w-6' : 'w-4'
+          } ${light ? 'bg-gold-light/70' : 'bg-gold-bronze/70'}`}
+        />
         <span
-          className={`mt-1 font-sans text-[0.625rem] font-medium tracking-[0.42em] transition-colors duration-500 group-hover:text-gold ${
-            light ? 'text-paper/65' : 'text-ink-400'
-          }`}
+          className={`font-sans font-medium uppercase transition-colors duration-500 ${
+            isLarge ? 'text-[0.62rem] tracking-[0.4em]' : 'text-[0.5rem] tracking-[0.36em]'
+          } ${light ? 'text-paper/60' : 'text-ink-400'}`}
         >
-          APARTMENT
+          Apartment
         </span>
       </span>
     </Link>

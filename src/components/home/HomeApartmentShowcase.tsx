@@ -1,8 +1,18 @@
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Reveal from '@/components/Reveal';
+import SectionLabel from '@/components/ui/SectionLabel';
+import EditorialImage from '@/components/ui/EditorialImage';
 import { useApartments } from '@/hooks/useApartments';
 import { getApartmentPath } from '@/lib/apartmentRoutes';
+
+const layout = [
+  'md:col-span-6',
+  'md:col-span-3 md:mt-24 md:col-start-7',
+  'md:col-span-3 md:col-start-10 md:mt-48',
+];
+
+const frames = ['4/5', '3/4', '3/4'] as const;
 
 export default function HomeApartmentShowcase() {
   const { apartments } = useApartments();
@@ -10,89 +20,51 @@ export default function HomeApartmentShowcase() {
   if (featuredRooms.length === 0) return null;
 
   return (
-    <section className="overflow-hidden bg-ink-900 py-16 text-paper md:py-24">
-      <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-16">
-        <div className="grid gap-10 border-b border-paper/15 pb-10 md:grid-cols-12 md:items-end md:gap-x-8">
-          <Reveal className="md:col-span-7">
-            <p className="eyebrow text-gold-light">The room collection · 01—09</p>
-            <h2 className="display mt-5 text-[clamp(2.75rem,6vw,5.75rem)] text-paper">
-              Find your <span className="italic text-gold">own space.</span>
-            </h2>
-          </Reveal>
-          <Reveal delay={120} className="md:col-span-4 md:col-start-9 md:pb-2">
-            <p className="max-w-sm text-base leading-relaxed text-paper/65">
-              Nine individual rooms to explore. Select a photograph to open that room’s details.
+    <section className="overflow-hidden bg-paper-warm py-20 md:py-28">
+      <div className="mx-auto max-w-site px-5 sm:px-6 md:px-12 lg:px-16">
+        <div className="grid gap-8 md:grid-cols-12 md:items-end md:gap-x-8">
+          <div className="md:col-span-7">
+            <Reveal>
+              <SectionLabel index="03">Featured accommodation</SectionLabel>
+              <h2 className="display mt-6 text-[clamp(2.7rem,5vw,5rem)] text-ink-900">
+                A closer look at <span className="italic text-gold-ink">the residences.</span>
+              </h2>
+            </Reveal>
+          </div>
+          <Reveal delay={120} className="md:col-span-4 md:col-start-9">
+            <p className="border-t border-ink-300/60 pt-5 text-[0.95rem] leading-[1.85] text-ink-500">
+              Three of the nine apartments. Open any residence for its own photography, verified details and
+              booking options.
             </p>
-          </Reveal>
-        </div>
-
-        <div className="mt-10 grid gap-6 md:grid-cols-12">
-          <Reveal className="md:col-span-7">
-            <Link
-              to={getApartmentPath(featuredRooms[0])}
-              className="group relative block min-h-[430px] overflow-hidden bg-ink-800 md:h-full md:min-h-[590px]"
-            >
-              <img
-                src={featuredRooms[0].photo.src}
-                alt={featuredRooms[0].photo.alt}
-                loading="lazy"
-                className="absolute inset-0 h-full w-full object-cover opacity-75 transition-transform duration-700 group-hover:scale-[1.04]"
-              />
-              <span className="absolute inset-0 bg-gradient-to-t from-ink-900/90 via-ink-900/10 to-ink-900/10" aria-hidden="true" />
-              <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-6 p-6 md:p-8">
-                <span>
-                  <span className="block text-xs font-medium uppercase tracking-[0.24em] text-gold-light">
-                    Room {featuredRooms[0].number}
-                  </span>
-                  <span className="display mt-2 block text-3xl text-paper md:text-4xl">{featuredRooms[0].name}</span>
-                </span>
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-paper/50 text-paper transition-colors group-hover:border-gold group-hover:bg-gold group-hover:text-ink-900">
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </span>
-              </span>
+            <Link to="/apartments" className="link-line mt-5 text-ink-900">
+              View the full collection
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </Reveal>
-
-          <div className="grid gap-6 md:col-span-5">
-            {featuredRooms.slice(1).map((room, index) => (
-              <Reveal key={room.slug} delay={(index + 1) * 120}>
-              <Link
-                to={getApartmentPath(room)}
-                className="group relative block min-h-[300px] overflow-hidden bg-ink-800 md:min-h-[282px]"
-              >
-                <img
-                  src={room.photo.src}
-                  alt={room.photo.alt}
-                  loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover opacity-75 transition-transform duration-700 group-hover:scale-[1.04]"
-                />
-                <span className="absolute inset-0 bg-gradient-to-t from-ink-900/90 via-ink-900/10 to-ink-900/10" aria-hidden="true" />
-                <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-6 p-6 md:p-8">
-                  <span>
-                    <span className="block text-xs font-medium uppercase tracking-[0.24em] text-gold-light">
-                      Room {room.number}
-                    </span>
-                    <span className="display mt-2 block text-3xl text-paper md:text-4xl">{room.name}</span>
-                  </span>
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-paper/50 text-paper transition-colors group-hover:border-gold group-hover:bg-gold group-hover:text-ink-900">
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                </span>
-              </Link>
-              </Reveal>
-            ))}
-          </div>
         </div>
 
-        <Reveal delay={200} className="mt-10">
-          <Link
-            to="/apartments"
-            className="link-line text-paper"
-          >
-            View all nine rooms
-            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </Link>
-        </Reveal>
+        <div className="mt-14 grid gap-x-6 gap-y-12 md:grid-cols-12">
+          {featuredRooms.map((room, index) => (
+            <Reveal key={room.slug} delay={index * 110} className={layout[index]}>
+              <Link to={getApartmentPath(room)} className="group block">
+                <div className="relative">
+                  <EditorialImage src={room.photo.src} alt={room.photo.alt} aspect={frames[index]} />
+                  <span className="absolute left-0 top-0 flex items-center gap-2 bg-paper/95 px-3 py-2 font-sans text-[0.55rem] font-semibold uppercase tracking-[0.22em] text-ink-800">
+                    {String(index + 1).padStart(2, '0')} / {String(featuredRooms.length).padStart(2, '0')}
+                  </span>
+                </div>
+                <div className="mt-5 flex items-start justify-between gap-5 border-b border-ink-300/50 pb-4">
+                  <div>
+                    <p className="eyebrow text-gold-ink">Residence {room.number}</p>
+                    <h3 className="display mt-2 text-[2rem] text-ink-900 md:text-[2.4rem]">{room.name}</h3>
+                  </div>
+                  <ArrowUpRight className="mt-2 h-4 w-4 shrink-0 text-ink-500 transition-transform duration-500 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-gold-ink" aria-hidden="true" />
+                </div>
+                <p className="mt-4 max-w-sm text-[0.9rem] leading-[1.8] text-ink-500">{room.summary}</p>
+              </Link>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -2,128 +2,226 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   DEMI APARTMENT — design tokens
+   60% gold / 25% ink / 15% marble & ivory
+   ============================================================ */
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
-    scroll-padding-top: 6rem;
+    scroll-padding-top: 6.5rem;
   }
 
   body {
-    @apply bg-paper font-sans leading-[1.5] text-ink-800;
-    background-image: radial-gradient(ellipse at 50% 0%, rgba(184, 149, 74, 0.035), transparent 40rem);
+    @apply bg-paper font-sans text-[0.975rem] leading-[1.7] text-ink-700;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display font-normal;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 
   ::selection {
-    @apply bg-gold/30 text-ink-900;
+    background: #e7a923;
+    color: #080808;
   }
 
   :focus-visible {
-    @apply outline-2 outline-offset-4 outline-gold;
+    outline: 2px solid #a87919;
+    outline-offset: 3px;
+  }
+
+  img {
+    -webkit-user-drag: none;
   }
 }
 
 @layer components {
-  .eyebrow {
-    @apply font-sans text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-gold-deep;
-  }
-
+  /* ---------- Typography ---------- */
   .display {
-    @apply font-serif font-normal leading-[1.08] tracking-[-0.025em];
+    @apply font-display font-normal leading-[0.98] tracking-[-0.02em];
   }
 
-  .page-title {
-    text-wrap: balance;
+  .display-tight {
+    @apply font-display font-normal leading-[0.9] tracking-[-0.03em];
   }
 
-  .link-line {
-    @apply relative inline-flex items-center gap-2 pb-1 text-xs font-semibold uppercase tracking-[0.18em] text-ink-500 transition-colors duration-500;
-    background-image: linear-gradient(currentColor, currentColor);
-    background-size: 0% 1px;
-    background-position: 0 100%;
-    background-repeat: no-repeat;
-    transition: background-size 0.6s cubic-bezier(0.2, 0.7, 0.1, 1), color 0.4s ease, transform 0.4s ease;
+  .eyebrow {
+    @apply font-sans text-[0.625rem] font-semibold uppercase leading-none tracking-[0.28em];
   }
 
-  .link-line:hover,
-  .link-line:focus-visible,
-  .link-line[aria-current='page'] {
-    @apply text-gold;
-    background-size: 100% 1px;
+  .eyebrow-gold {
+    color: #7a5710;
   }
 
+  .lede {
+    @apply text-[1.03rem] leading-[1.85] text-ink-600 md:text-[1.125rem];
+  }
+
+  .body-copy {
+    @apply text-[0.975rem] leading-[1.85] text-ink-600;
+  }
+
+  .fine-print {
+    @apply text-[0.7rem] leading-[1.8] tracking-[0.02em] text-ink-500;
+  }
+
+  /* ---------- Rules & surfaces ---------- */
+  .hairline {
+    @apply border-ink-200/70;
+  }
+
+  .rule-gold {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(184, 126, 37, 0.55), rgba(184, 126, 37, 0));
+  }
+
+  .rule-light {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(245, 215, 120, 0.55), rgba(245, 215, 120, 0));
+  }
+
+  .surface-gold {
+    background-image: linear-gradient(135deg, #eec456 0%, #e7a923 46%, #d4a017 100%);
+  }
+
+  .surface-ivory {
+    @apply bg-paper-warm;
+  }
+
+  .surface-ink {
+    @apply bg-ink-900 text-paper;
+  }
+
+  .vertical-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+
+  /* ---------- Buttons ---------- */
   .btn-gold {
-    @apply border border-gold-deep bg-gold-deep text-paper shadow-[0_8px_24px_rgba(87,67,31,0.12)] transition-all duration-500;
+    @apply inline-flex items-center justify-center gap-3 bg-gold px-6 py-4 font-sans text-[0.65rem] font-bold uppercase tracking-[0.2em] text-ink-900 transition-all duration-500;
   }
 
   .btn-gold:hover,
   .btn-gold:focus-visible {
-    @apply -translate-y-0.5 border-gold bg-gold text-ink-900 shadow-[0_12px_30px_rgba(87,67,31,0.2)];
+    @apply bg-gold-champagne shadow-[0_18px_40px_-24px_rgba(122,87,16,0.8)];
   }
 
   .btn-outline {
-    @apply border border-ink-200 bg-transparent text-ink-700 transition-all duration-500;
+    @apply inline-flex items-center justify-center gap-3 border border-ink-900/25 bg-transparent px-6 py-4 font-sans text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-ink-900 transition-all duration-500;
   }
 
   .btn-outline:hover,
   .btn-outline:focus-visible {
-    @apply -translate-y-0.5 border-gold bg-gold/5 text-gold-deep;
+    @apply border-ink-900 bg-ink-900 text-paper;
   }
 
-  .reveal {
-    opacity: 0;
-    transform: translate3d(0, 24px, 0);
-    transition:
-      opacity 0.85s cubic-bezier(0.2, 0.7, 0.1, 1) var(--reveal-delay, 0ms),
-      transform 0.85s cubic-bezier(0.2, 0.7, 0.1, 1) var(--reveal-delay, 0ms);
+  .btn-outline-light {
+    @apply inline-flex items-center justify-center gap-3 border border-paper/35 bg-transparent px-6 py-4 font-sans text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-paper transition-all duration-500;
   }
 
-  .reveal.is-visible {
+  .btn-outline-light:hover,
+  .btn-outline-light:focus-visible {
+    @apply border-gold-light bg-gold-light text-ink-900;
+  }
+
+  .link-line {
+    @apply relative inline-flex items-center gap-2 pb-1 font-sans text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-current transition-colors duration-500;
+  }
+
+  .link-line::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 1px;
+    width: 100%;
+    background: currentColor;
+    transform: scaleX(0.22);
+    transform-origin: left;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0.55;
+  }
+
+  .link-line:hover::after,
+  .link-line:focus-visible::after,
+  .link-line[aria-current='page']::after {
+    transform: scaleX(1);
     opacity: 1;
-    transform: none;
   }
 
+  /* ---------- Images ---------- */
   .media-frame img {
-    transition: transform 1.2s cubic-bezier(0.2, 0.7, 0.1, 1), filter 0.8s ease;
+    transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.9s ease;
   }
 
   .media-frame:hover img {
     transform: scale(1.035);
   }
 
-  .hero-media {
-    animation: hero-zoom 2.8s cubic-bezier(0.2, 0.7, 0.1, 1) both;
-  }
-
-  .page-header-media {
-    animation: hero-zoom 1.8s cubic-bezier(0.2, 0.7, 0.1, 1) both;
-  }
-
-  .editorial-rule {
-    height: 1px;
-    background: linear-gradient(90deg, rgba(184, 149, 74, 0.8), rgba(184, 149, 74, 0.12) 65%, transparent);
-  }
-
+  /* ---------- Forms ---------- */
   .booking-field {
-    @apply mt-3 w-full min-w-0 border-0 border-b border-ink-200 bg-paper/70 px-4 py-3 font-sans text-base text-ink-900 transition-colors duration-300 placeholder:text-ink-300 focus:border-gold focus:outline-none aria-[invalid=true]:border-[#C75D4A];
+    @apply mt-3 w-full min-w-0 rounded-none border-0 border-b border-ink-300 bg-transparent px-0 py-3 font-sans text-[0.975rem] text-ink-900 transition-colors duration-300 placeholder:text-ink-400 focus:border-gold-bronze focus:outline-none aria-[invalid=true]:border-[#a8402c];
   }
 
-  .booking-field:focus {
-    box-shadow: 0 1px 0 theme('colors.gold.DEFAULT');
+  .field {
+    @apply w-full min-w-0 rounded-none border-0 border-b border-ink-300 bg-transparent px-0 py-3.5 font-sans text-[1rem] text-ink-900 transition-colors duration-300 placeholder:text-ink-400 focus:border-gold-bronze focus:outline-none;
+  }
+
+  .field-label {
+    @apply block font-sans text-[0.625rem] font-semibold uppercase tracking-[0.24em] text-ink-500;
   }
 
   .booking-form input[type='checkbox'] {
-    accent-color: theme('colors.gold.deep');
+    accent-color: #b8860b;
   }
 
-  @keyframes hero-zoom {
-    0% {
-      transform: scale(1.12);
-    }
-    100% {
-      transform: scale(1);
-    }
+  /* ---------- Motion helpers ---------- */
+  .marquee-track {
+    animation: marquee 46s linear infinite;
+  }
+
+  .hero-media {
+    animation: hero-zoom 3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes hero-zoom {
+  from {
+    transform: scale(1.1);
+  }
+  to {
+    transform: scale(1);
   }
 }
 
@@ -138,10 +236,10 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 
-  .reveal {
-    opacity: 1;
-    transform: none;
+  .marquee-track {
+    animation: none !important;
   }
 }

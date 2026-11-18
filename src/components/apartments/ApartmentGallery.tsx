@@ -1,62 +1,88 @@
 import { useCallback, useState } from 'react';
+import { Expand } from 'lucide-react';
 import type { Photo } from '@/data/media';
 import Reveal from '@/components/Reveal';
 import GalleryLightbox from '@/components/home/GalleryLightbox';
+import SectionLabel from '@/components/ui/SectionLabel';
 
 interface ApartmentGalleryProps {
   roomName: string;
   photos: Photo[];
 }
 
+/** Editorial mosaic: one commanding frame, then a measured supporting column. */
 export default function ApartmentGallery({ roomName, photos }: ApartmentGalleryProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const close = useCallback(() => setActiveIndex(null), []);
+  const [featured, ...rest] = photos;
+
+  if (!featured) return null;
 
   return (
-    <section id="room-gallery" aria-label={`${roomName} photo gallery`} className="scroll-mt-24 border-y border-ink-100/60 bg-paper-warm py-16 md:py-24">
-      <div className="mx-auto max-w-[1440px] px-5 sm:px-6 md:px-12 lg:px-16">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <section id="room-gallery" aria-label={`${roomName} photo gallery`} className="scroll-mt-24 bg-paper py-16 md:py-24">
+      <div className="mx-auto max-w-site px-5 sm:px-6 md:px-12 lg:px-16">
+        <div className="flex flex-wrap items-end justify-between gap-5 border-b border-ink-200/70 pb-6">
           <div>
-            <p className="eyebrow inline-flex items-center gap-3">
-              <span className="h-px w-8 bg-gold/70" aria-hidden="true" />
-              A closer look
-            </p>
-            <h2 className="display mt-3 text-3xl text-ink-900 md:text-4xl">{roomName}</h2>
+            <SectionLabel>A closer look</SectionLabel>
+            <h2 className="display mt-4 text-[clamp(2rem,3.4vw,3rem)] text-ink-900">{roomName}</h2>
           </div>
-          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-ink-500">
-            {String(photos.length).padStart(2, '0')} photographs
+          <p className="font-sans text-[0.6rem] font-semibold uppercase tracking-[0.22em] text-ink-400">
+            {String(photos.length).padStart(2, '0')} photographs · select to enlarge
           </p>
         </div>
 
-        <div className="grid gap-3 border border-ink-100 bg-paper p-2 sm:gap-4 sm:p-3 md:grid-cols-12">
-          {photos.map((photo, index) => (
-            <Reveal
-              key={photo.src}
-              delay={index * 80}
-              className={index === 0 ? 'md:col-span-8' : 'md:col-span-4'}
+        <div className="mt-8 grid gap-4 md:grid-cols-12 md:gap-5">
+          <Reveal className="md:col-span-7">
+            <button
+              type="button"
+              onClick={() => setActiveIndex(0)}
+              aria-label={`View photo 1 of ${photos.length}: ${featured.alt}`}
+              className="group relative block w-full overflow-hidden bg-paper-muted"
             >
-              <button
-                type="button"
-                onClick={() => setActiveIndex(index)}
-                aria-label={`View ${roomName} photo ${index + 1}: ${photo.alt}`}
-                className={`media-frame group relative block w-full overflow-hidden bg-paper-muted ${
-                  index === 0
-                    ? 'aspect-[4/3] md:aspect-auto md:h-[min(60vw,46rem)]'
-                    : 'aspect-[4/3] md:aspect-auto md:h-full'
-                }`}
-              >
+              <div className="aspect-[4/3] w-full overflow-hidden">
                 <img
-                  src={photo.src}
-                  alt={photo.alt}
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                  src={featured.src}
+                  alt={featured.alt}
+                  loading="eager"
+                  className="h-full w-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-[1.03]"
                 />
-                <span className="absolute bottom-3 right-3 border border-paper/20 bg-ink-900/80 px-3 py-2 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-paper">
-                  View {String(index + 1).padStart(2, '0')}
-                </span>
-              </button>
-            </Reveal>
-          ))}
+              </div>
+              <span className="absolute left-4 top-4 bg-paper/95 px-3 py-2 font-sans text-[0.55rem] font-semibold uppercase tracking-[0.2em] text-ink-800">
+                01 / {String(photos.length).padStart(2, '0')}
+              </span>
+              <span className="absolute bottom-4 right-4 flex h-10 w-10 items-center justify-center border border-paper/50 bg-ink-900/40 text-paper backdrop-blur-sm transition-colors group-hover:border-gold-light group-hover:bg-gold group-hover:text-ink-900">
+                <Expand className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+              </span>
+            </button>
+          </Reveal>
+
+          <div className={`md:col-span-5 ${rest.length > 1 ? 'grid gap-4 md:gap-5' : ''}`}>
+            {rest.map((photo, index) => (
+              <Reveal key={photo.src} delay={(index + 1) * 100} className={rest.length === 1 ? 'h-full' : ''}>
+                <button
+                  type="button"
+                  onClick={() => setActiveIndex(index + 1)}
+                  aria-label={`View photo ${index + 2} of ${photos.length}: ${photo.alt}`}
+                  className={`group relative block w-full overflow-hidden bg-paper-muted ${rest.length === 1 ? 'h-full' : ''}`}
+                >
+                  <div className={`w-full overflow-hidden ${rest.length === 1 ? 'aspect-[4/3] md:h-full' : 'aspect-[16/11]'}`}>
+                    <img
+                      src={photo.src}
+                      alt={photo.alt}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-[1.03]"
+                    />
+                  </div>
+                  <span className="absolute left-4 top-4 bg-paper/95 px-3 py-2 font-sans text-[0.55rem] font-semibold uppercase tracking-[0.2em] text-ink-800">
+                    {String(index + 2).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}
+                  </span>
+                  <span className="absolute bottom-4 right-4 flex h-10 w-10 items-center justify-center border border-paper/50 bg-ink-900/40 text-paper backdrop-blur-sm transition-colors group-hover:border-gold-light group-hover:bg-gold group-hover:text-ink-900">
+                    <Expand className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                  </span>
+                </button>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -66,6 +92,7 @@ export default function ApartmentGallery({ roomName, photos }: ApartmentGalleryP
           index={activeIndex}
           onIndexChange={setActiveIndex}
           onClose={close}
+          label={`${roomName} photo gallery`}
         />
       )}
     </section>

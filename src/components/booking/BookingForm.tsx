@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,6 +7,8 @@ import { ArrowLeft, ArrowRight, Check, Clock3, Loader2, Search, ShieldCheck } fr
 import type { Apartment } from '@/data/apartments';
 import { getApartmentPath } from '@/lib/apartmentRoutes';
 import DateRangeCalendar from '@/components/booking/DateRangeCalendar';
+import BookingProgress from '@/components/booking/BookingProgress';
+import { EASE } from '@/lib/motion';
 import {
   MAX_GUESTS,
   bookingSchema,
@@ -256,27 +259,20 @@ export default function BookingForm({
 
   return (
     <div className="booking-form min-w-0 space-y-8" aria-label="Reservation">
-      <ol aria-label="Reservation progress" className="grid grid-cols-5 border-y border-ink-100 py-4">
-        {steps.map((label, index) => {
-          const current = index + 1;
-          const active = current === step;
-          const complete = current < step;
-          return (
-            <li key={label} aria-current={active ? 'step' : undefined} className="flex flex-col items-center gap-2 text-center">
-              <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs ${complete || active ? 'bg-ink-900 text-paper' : 'bg-paper-warm text-ink-400'}`}>
-                {complete ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : current}
-              </span>
-              <span className={`text-[0.55rem] uppercase tracking-[0.08em] sm:text-[0.65rem] ${active ? 'font-medium text-ink-900' : 'text-ink-400'}`}>{label}</span>
-            </li>
-          );
-        })}
-      </ol>
+      <BookingProgress steps={steps} step={step} />
 
+        <motion.div
+          key={step}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: EASE }}
+          className="space-y-8"
+        >
       {step === 1 && (
         <section className="space-y-8" aria-labelledby="stay-search-title">
           <div>
             <p className="eyebrow">Step 1 of {steps.length}</p>
-            <h2 id="stay-search-title" className="mt-2 font-serif text-3xl text-ink-900">
+            <h2 id="stay-search-title" className="display mt-2 text-[2rem] text-ink-900 md:text-[2.25rem]">
               {initialApartmentSlug
                 ? `${apartments.find((room) => room.slug === initialApartmentSlug)?.bookingEnabled ? 'Book' : 'Request'} ${apartments.find((room) => room.slug === initialApartmentSlug)?.name ?? 'this room'}`
                 : 'Search your stay'}
@@ -308,10 +304,10 @@ export default function BookingForm({
           </div>
           <div className="grid gap-8 sm:grid-cols-2">
             <Field id="adults" label="Adults" error={errors.adults?.message}>
-              <input id="adults" type="number" min={1} max={MAX_GUESTS} inputMode="numeric" className={fieldClass} {...register('adults', { valueAsNumber: true })} />
+              <input id="adults" type="number" min={1} max={MAX_GUESTS} inputMode="numeric" className={fieldClass} aria-invalid={Boolean(errors.adults)} aria-describedby={errors.adults ? 'adults-error' : undefined} {...register('adults', { valueAsNumber: true })} />
             </Field>
             <Field id="children" label="Children" error={errors.children?.message}>
-              <input id="children" type="number" min={0} max={MAX_GUESTS - 1} inputMode="numeric" className={fieldClass} {...register('children', { valueAsNumber: true })} />
+              <input id="children" type="number" min={0} max={MAX_GUESTS - 1} inputMode="numeric" className={fieldClass} aria-invalid={Boolean(errors.children)} aria-describedby={errors.children ? 'children-error' : undefined} {...register('children', { valueAsNumber: true })} />
             </Field>
           </div>
           <p className="border-l-2 border-gold bg-paper-warm px-4 py-3 text-xs leading-relaxed text-ink-600">
@@ -330,7 +326,7 @@ export default function BookingForm({
           <div className="flex items-start justify-between gap-5">
             <div>
               <p className="eyebrow">Step 2 of {steps.length}</p>
-              <h2 id="residence-results-title" className="mt-2 font-serif text-3xl text-ink-900">
+              <h2 id="residence-results-title" className="display mt-2 text-[2rem] text-ink-900 md:text-[2.25rem]">
                 {initialApartmentSlug ? 'Your selected residence' : 'Choose your residence'}
               </h2>
               <p className="mt-3 text-sm text-ink-500">{formatIsoDate(checkIn)} – {formatIsoDate(checkOut)} · {nights} {nights === 1 ? 'night' : 'nights'} · {guests} {guests === 1 ? 'guest' : 'guests'}</p>
@@ -344,10 +340,10 @@ export default function BookingForm({
           )}
           <div className="space-y-4">
             {searchResults.map(({ apartment, amenities, available, requestOnly: isRequestOnly, reason }) => (
-              <article key={apartment.slug} className={`grid gap-5 border bg-paper p-4 sm:grid-cols-[150px_1fr_auto] sm:items-center ${available ? 'border-ink-100' : 'border-ink-100 opacity-75'}`}>
-                <img src={apartment.photo.src} alt={apartment.photo.alt} className="h-36 w-full object-cover sm:h-28" />
+              <article key={apartment.slug} className={`grid gap-5 border bg-paper p-4 transition-colors sm:grid-cols-[150px_1fr_auto] sm:items-center sm:p-5 ${available ? 'border-ink-200/80 hover:border-gold-bronze/50' : 'border-ink-200/60 opacity-70'}`}>
+                <img src={apartment.photo.src} alt={apartment.photo.alt} loading="lazy" className="aspect-[4/3] w-full object-cover sm:aspect-auto sm:h-28" />
                 <div>
-                  <h3 className="font-serif text-2xl text-ink-900">{apartment.name}</h3>
+                  <h3 className="display text-[1.6rem] text-ink-900">{apartment.name}</h3>
                   <p className="mt-2 text-sm text-ink-500">{apartment.summary}</p>
                   <p className="mt-2 text-xs text-ink-500">
                     {apartment.bedConfiguration ?? 'Bed details to be confirmed'}
@@ -408,7 +404,7 @@ export default function BookingForm({
         <section className="space-y-8" aria-labelledby="guest-details-title">
           <div>
             <p className="eyebrow">Step 3 of {steps.length}</p>
-            <h2 id="guest-details-title" className="mt-2 font-serif text-3xl text-ink-900">Your details</h2>
+            <h2 id="guest-details-title" className="display mt-2 text-[2rem] text-ink-900 md:text-[2.25rem]">Your details</h2>
             <p className="mt-3 text-sm text-ink-500">
               {requestOnly
                 ? 'Share your details so the property can check your request and contact you.'
@@ -417,28 +413,28 @@ export default function BookingForm({
           </div>
           <div className="grid gap-8 sm:grid-cols-2">
             <Field id="firstName" label="First name" error={errors.firstName?.message}>
-              <input id="firstName" autoComplete="given-name" className={fieldClass} {...register('firstName')} />
+              <input id="firstName" autoComplete="given-name" className={fieldClass} aria-invalid={Boolean(errors.firstName)} aria-describedby={errors.firstName ? 'firstName-error' : undefined} {...register('firstName')} />
             </Field>
             <Field id="lastName" label="Last name" error={errors.lastName?.message}>
-              <input id="lastName" autoComplete="family-name" className={fieldClass} {...register('lastName')} />
+              <input id="lastName" autoComplete="family-name" className={fieldClass} aria-invalid={Boolean(errors.lastName)} aria-describedby={errors.lastName ? 'lastName-error' : undefined} {...register('lastName')} />
             </Field>
           </div>
           <Field id="guestEmail" label="Email address" error={errors.guestEmail?.message}>
-            <input id="guestEmail" type="email" autoComplete="email" className={fieldClass} {...register('guestEmail')} />
+            <input id="guestEmail" type="email" autoComplete="email" className={fieldClass} aria-invalid={Boolean(errors.guestEmail)} aria-describedby={errors.guestEmail ? 'guestEmail-error' : undefined} {...register('guestEmail')} />
           </Field>
           <div className="grid gap-8 sm:grid-cols-2">
             <Field id="guestPhone" label="Phone (include country code)" error={errors.guestPhone?.message}>
-              <input id="guestPhone" type="tel" autoComplete="tel" placeholder="+250 ..." className={fieldClass} {...register('guestPhone')} />
+              <input id="guestPhone" type="tel" autoComplete="tel" placeholder="+250 ..." className={fieldClass} aria-invalid={Boolean(errors.guestPhone)} aria-describedby={errors.guestPhone ? 'guestPhone-error' : undefined} {...register('guestPhone')} />
             </Field>
             <Field id="guestCountry" label="Country of residence" error={errors.guestCountry?.message}>
-              <input id="guestCountry" autoComplete="country-name" className={fieldClass} {...register('guestCountry')} />
+              <input id="guestCountry" autoComplete="country-name" className={fieldClass} aria-invalid={Boolean(errors.guestCountry)} aria-describedby={errors.guestCountry ? 'guestCountry-error' : undefined} {...register('guestCountry')} />
             </Field>
           </div>
           <Field id="estimatedArrivalTime" label="Estimated arrival time (optional)" error={errors.estimatedArrivalTime?.message}>
-            <input id="estimatedArrivalTime" type="time" className={fieldClass} {...register('estimatedArrivalTime')} />
+            <input id="estimatedArrivalTime" type="time" className={fieldClass} aria-invalid={Boolean(errors.estimatedArrivalTime)} aria-describedby={errors.estimatedArrivalTime ? 'estimatedArrivalTime-error' : undefined} {...register('estimatedArrivalTime')} />
           </Field>
           <Field id="notes" label="Special requests (optional)" error={errors.notes?.message}>
-            <textarea id="notes" rows={4} className={`${fieldClass} resize-none`} {...register('notes')} />
+            <textarea id="notes" rows={4} className={`${fieldClass} resize-none`} aria-invalid={Boolean(errors.notes)} aria-describedby={errors.notes ? 'notes-error' : undefined} {...register('notes')} />
           </Field>
           {rootError && <p className="text-sm text-rose-700" role="alert">{rootError}</p>}
           <div className="flex flex-wrap gap-3">
@@ -452,7 +448,7 @@ export default function BookingForm({
         <section className="space-y-8" aria-labelledby="review-title">
           <div>
             <p className="eyebrow">Step 4 of {steps.length}</p>
-            <h2 id="review-title" className="mt-2 font-serif text-3xl text-ink-900">{requestOnly ? 'Review your room request' : 'Review your reservation'}</h2>
+            <h2 id="review-title" className="display mt-2 text-[2rem] text-ink-900 md:text-[2.25rem]">{requestOnly ? 'Review your room request' : 'Review your reservation'}</h2>
             <p className="mt-3 text-sm text-ink-500">
               {requestOnly
                 ? 'Check your details before sending this request. The room is not held or confirmed.'
@@ -463,7 +459,7 @@ export default function BookingForm({
             <div className="flex flex-col gap-5 sm:flex-row">
               <img src={selectedApartment.photo.src} alt={selectedApartment.photo.alt} className="h-40 w-full object-cover sm:w-52" />
               <div>
-                <h3 className="font-serif text-2xl text-ink-900">{selectedApartment.name}</h3>
+                <h3 className="display text-[1.6rem] text-ink-900">{selectedApartment.name}</h3>
                 <p className="mt-3 text-sm text-ink-600">{formatIsoDate(checkIn)} – {formatIsoDate(checkOut)} ({nights} {nights === 1 ? 'night' : 'nights'})</p>
                 <p className="mt-2 text-sm text-ink-600">{adults} {adults === 1 ? 'adult' : 'adults'}{children > 0 ? `, ${children} ${children === 1 ? 'child' : 'children'}` : ''}</p>
               </div>
@@ -540,7 +536,7 @@ export default function BookingForm({
           </div>
           <div>
             <p className="eyebrow">Step 5 of 6 · Request received</p>
-            <h2 id="request-sent-title" className="mt-2 font-serif text-3xl text-ink-900">Your request is with the property.</h2>
+            <h2 id="request-sent-title" className="display mt-2 text-[2rem] text-ink-900 md:text-[2.25rem]">Your request is with the property.</h2>
             <p className="mt-3 text-sm leading-relaxed text-ink-600">
               Your request for {selectedApartment.name} was sent to the property. This is not a confirmed booking and the dates are not held. The team will verify availability, capacity, room details, and the final price before contacting you.
             </p>
@@ -564,7 +560,7 @@ export default function BookingForm({
           </div>
           <div>
             <p className="eyebrow">Step 6 of 6 · Payment</p>
-            <h2 id="request-payment-title" className="mt-2 font-serif text-3xl text-ink-900">Payment comes after confirmation.</h2>
+            <h2 id="request-payment-title" className="display mt-2 text-[2rem] text-ink-900 md:text-[2.25rem]">Payment comes after confirmation.</h2>
             <p className="mt-3 text-sm leading-relaxed text-ink-600">
               Your request for {selectedApartment.name} is not yet a booking. The property must first confirm the room, guest capacity, dates, and final price. There is no payment due now, and no payment link has been created for this request.
             </p>
@@ -599,6 +595,7 @@ export default function BookingForm({
           </div>
         </section>
       )}
+        </motion.div>
     </div>
   );
 }
