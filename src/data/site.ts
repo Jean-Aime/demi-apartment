@@ -15,8 +15,6 @@ export const contact = {
 export const navigation: NavItem[] = [
   { label: 'Residences', to: '/apartments' },
   { label: 'Experience', to: '/experience' },
-  { label: 'Gallery', to: '/gallery' },
-  { label: 'Location', to: '/location' },
   { label: 'About', to: '/about' },
   { label: 'Contact', to: '/contact' },
 ];

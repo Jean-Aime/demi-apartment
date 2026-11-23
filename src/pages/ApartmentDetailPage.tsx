@@ -17,6 +17,8 @@ import {
   type PropertyHouseRule,
 } from '@/lib/propertyContent';
 import { EASE } from '@/lib/motion';
+import { fetchApartmentGroups, fetchPublicSharedFacilities, type ApartmentGroup, type SharedFacility } from '@/lib/propertyApartmentGroups';
+import { subscribeToPropertyDataChanges } from '@/lib/propertyDataEvents';
 
 function priceLabel(apartmentPrice: { amount: number; currency: string } | undefined) {
   if (!apartmentPrice) return 'On request';
@@ -33,6 +35,8 @@ export default function ApartmentDetailPage() {
   const [amenitiesError, setAmenitiesError] = useState('');
   const [publishedRules, setPublishedRules] = useState<PropertyHouseRule[]>([]);
   const [rulesError, setRulesError] = useState('');
+  const [groups, setGroups] = useState<ApartmentGroup[]>([]);
+  const [sharedFacilities, setSharedFacilities] = useState<SharedFacility[]>([]);
   const reduceMotion = useReducedMotion();
 
   const roomIndex = apartments.findIndex(
@@ -42,25 +46,36 @@ export default function ApartmentDetailPage() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([fetchPublicAmenities(), fetchPublishedHouseRules()])
-      .then(([items, rules]) => {
+    const loadPublicContent = async () => {
+      try {
+        const [items, rules, nextGroups, nextFacilities] = await Promise.all([
+          fetchPublicAmenities(),
+          fetchPublishedHouseRules(),
+          fetchApartmentGroups(),
+          fetchPublicSharedFacilities(),
+        ]);
         if (active) {
           setAmenities(items);
           setPublishedRules(rules);
+          setGroups(nextGroups);
+          setSharedFacilities(nextFacilities);
           setAmenitiesError('');
           setRulesError('');
         }
-      })
-      .catch((cause: unknown) => {
+      } catch (cause: unknown) {
         if (!active) return;
         const message = cause instanceof Error ? cause.message : 'Public property information is unavailable.';
         setAmenitiesError(message);
         setRulesError(message);
-      });
+      }
+    };
+    void loadPublicContent();
+    const unsubscribe = subscribeToPropertyDataChanges(() => { void loadPublicContent(); });
     return () => {
       active = false;
+      unsubscribe();
     };
-  }, []);
+  }, [slug]);
 
   if (!apartment) {
     if (loading) {
@@ -79,7 +94,6 @@ export default function ApartmentDetailPage() {
   }
 
   const roomAmenities = amenities.filter((item) => item.scope === 'room' && item.apartment_slug === apartment.slug);
-  const sharedAmenities = amenities.filter((item) => item.scope === 'shared');
   const otherRooms = apartments.filter((room) => room.slug !== apartment.slug);
   const alignRight = roomIndex % 2 === 1;
   const galleryPhotos = alignRight ? [...apartment.photos].reverse() : apartment.photos;
@@ -271,29 +285,35 @@ export default function ApartmentDetailPage() {
               )}
             </div>
 
-            {sharedAmenities.length > 0 && (
+            {apartment.apartmentGroup && (
               <div className="mt-14 border-t border-ink-200 pt-10">
                 <Reveal>
-                  <SectionLabel index="04">Shared facilities</SectionLabel>
+                  <SectionLabel index="04">Your apartment&apos;s shared spaces</SectionLabel>
                   <h2 className="display mt-5 text-[clamp(2rem,3.2vw,2.8rem)] text-ink-900">
-                    Verified shared <span className="italic text-gold-ink">spaces.</span>
+                    Apartment {apartment.apartmentGroup} shared <span className="italic text-gold-ink">spaces.</span>
                   </h2>
+                  <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink-500">
+                    This private bedroom is in Apartment {apartment.apartmentGroup}. Its living room and kitchen are shared with guests staying in the other bedrooms of Apartment {apartment.apartmentGroup}.
+                  </p>
                 </Reveal>
                 <ul className="mt-8 grid gap-x-8 gap-y-7 sm:grid-cols-2">
-                  {sharedAmenities.map((amenity, index) => (
-                    <Reveal key={amenity.id} delay={index * 60}>
+                  {sharedFacilities
+                    .filter((facility) => groups.find((group) => group.id === facility.apartment_group_id)?.identifier === apartment.apartmentGroup)
+                    .map((facility, index) => (
+                    <Reveal key={facility.id} delay={index * 60}>
                       <li className="border-t border-ink-200 pt-4">
-                        {amenity.photo_path && (
+                        {facility.photos[0] && (
                           <img
-                            src={amenity.photo_path}
-                            alt={amenity.photo_alt}
+                            src={facility.photos[0].src}
+                            alt={facility.photos[0].alt}
                             loading="lazy"
                             className="mb-4 aspect-[4/3] w-full object-cover"
                           />
                         )}
-                        <p className="font-display text-[1.35rem] text-ink-900">{amenity.name}</p>
-                        {amenity.description && (
-                          <p className="mt-2 text-[0.875rem] leading-[1.8] text-ink-500">{amenity.description}</p>
+                        <p className="eyebrow text-gold-ink">{facility.facility_type === 'living_room' ? 'Shared living room' : 'Shared kitchen'}</p>
+                        <p className="mt-2 font-display text-[1.35rem] text-ink-900">{facility.name}</p>
+                        {facility.description && (
+                          <p className="mt-2 text-[0.875rem] leading-[1.8] text-ink-500">{facility.description}</p>
                         )}
                       </li>
                     </Reveal>
@@ -373,7 +393,7 @@ export default function ApartmentDetailPage() {
               <h2 className="display mt-4 text-[clamp(2rem,3.4vw,3rem)] text-ink-900">Other residences</h2>
             </div>
             <Link to="/apartments" className="link-line text-ink-900">
-              All nine residences
+              All private bedrooms
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>

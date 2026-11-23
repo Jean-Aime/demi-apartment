@@ -4,6 +4,7 @@ import AdminModal from '@/components/admin/AdminModal';
 import { supabase } from '@/lib/supabase';
 import { fetchManagedApartments, type ManagedApartment } from '@/lib/propertyApartments';
 import { uploadPropertyImage } from '@/lib/propertyContent';
+import { notifyPropertyDataChanged } from '@/lib/propertyDataEvents';
 
 const fieldClass = 'mt-2 w-full border border-ink-200 bg-paper px-3 py-2.5 text-sm text-ink-900 outline-none focus:border-gold';
 const labelClass = 'block text-xs font-medium uppercase tracking-[0.12em] text-ink-500';
@@ -168,6 +169,7 @@ export function AdminAmenities() {
         ? await supabase.from('property_amenities').update(record).eq('id', editingId)
         : await supabase.from('property_amenities').insert(record);
       if (result.error) throw new Error(`Could not save this amenity: ${result.error.message}`);
+      notifyPropertyDataChanged();
       setNotice('Amenity saved. It appears publicly only when both verified and published are selected.');
       setModalOpen(false);
       setRefresh((value) => value + 1);
@@ -184,6 +186,7 @@ export function AdminAmenities() {
     const { error: deleteError } = await supabase.from('property_amenities').delete().eq('id', amenity.id);
     if (deleteError) setError(`Could not delete ${amenity.name}: ${deleteError.message}`);
     else {
+      notifyPropertyDataChanged();
       setNotice('Amenity deleted.');
       setRefresh((value) => value + 1);
     }
@@ -229,7 +232,13 @@ export function AdminAmenities() {
           <label className={labelClass}>Amenity name<input required maxLength={100} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={fieldClass} /></label>
           <label className={labelClass}>Description<textarea maxLength={1000} rows={3} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={fieldClass} /></label>
           <label className={labelClass}>Photo URL<input value={form.photoPath} onChange={(event) => setForm({ ...form, photoPath: event.target.value })} className={fieldClass} /></label>
-          <label className={labelClass}>Upload photo<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file); event.currentTarget.value = ''; }} className={fieldClass} /><span className="mt-1 block text-[0.65rem] normal-case text-ink-400">JPG, PNG, or WebP up to 5 MB.</span></label>
+          <label className={labelClass}>Upload photo from device<input type="file" accept="image/*,.heic,.heif" disabled={uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file); event.currentTarget.value = ''; }} className={fieldClass} /><span className="mt-1 block text-[0.65rem] normal-case text-ink-400">Includes HEIC/HEIF (converted to JPEG for display), up to 5 MB.</span></label>
+          {form.photoPath && (
+            <figure className="border border-ink-100 bg-paper-warm p-2">
+              <img src={form.photoPath} alt={form.photoAlt || 'Amenity image preview'} className="aspect-[16/9] max-h-64 w-full object-contain" />
+              <figcaption className="px-2 py-2 text-xs text-ink-500">Image preview · {form.photoAlt || 'Add an image description below'}</figcaption>
+            </figure>
+          )}
           <label className={labelClass}>Photo description<input value={form.photoAlt} onChange={(event) => setForm({ ...form, photoAlt: event.target.value })} className={fieldClass} /></label>
           <label className={labelClass}>Display order<input type="number" value={form.displayOrder} onChange={(event) => setForm({ ...form, displayOrder: event.target.value })} className={fieldClass} /></label>
           <div className="flex flex-wrap gap-6">
@@ -337,6 +346,7 @@ export function AdminHouseRules() {
         ? await supabase.from('property_house_rules').update(record).eq('id', editingId)
         : await supabase.from('property_house_rules').insert(record);
       if (result.error) throw new Error(`Could not save this rule: ${result.error.message}`);
+      notifyPropertyDataChanged();
       setNotice('House rule saved. Guests see and accept only rules marked verified and published.');
       setModalOpen(false);
       setRefresh((value) => value + 1);
@@ -353,6 +363,7 @@ export function AdminHouseRules() {
     const { error: deleteError } = await supabase.from('property_house_rules').delete().eq('id', rule.id);
     if (deleteError) setError(`Could not delete this house rule: ${deleteError.message}`);
     else {
+      notifyPropertyDataChanged();
       setNotice('House rule deleted. Existing reservations retain their accepted rules snapshot.');
       setRefresh((value) => value + 1);
     }
@@ -400,9 +411,20 @@ interface BlockedDate {
   reason: string;
 }
 
+interface ReservedStay {
+  id: string;
+  apartment_slug: string;
+  check_in: string;
+  check_out: string;
+  status: 'awaiting_payment' | 'confirmed' | 'checked_in';
+  booking_reference: string | null;
+  hold_expires_at: string | null;
+}
+
 export function AdminAvailability() {
   const [rooms, setRooms] = useState<ManagedApartment[]>([]);
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
+  const [reservedStays, setReservedStays] = useState<ReservedStay[]>([]);
   const [apartmentSlug, setApartmentSlug] = useState('');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -416,16 +438,31 @@ export function AdminAvailability() {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     Promise.all([
       fetchManagedApartments(),
       supabase
         ? supabase.from('property_blocked_dates').select('id, apartment_slug, check_in, check_out, reason').order('check_in')
         : Promise.reject(new Error('Supabase is not configured.')),
-    ]).then(([loadedRooms, result]) => {
+      supabase
+        ? supabase
+          .from('booking_requests')
+          .select('id, apartment_slug, check_in, check_out, status, booking_reference, hold_expires_at')
+          .in('status', ['awaiting_payment', 'confirmed', 'checked_in'])
+          .gte('check_out', today)
+          .order('check_in')
+        : Promise.reject(new Error('Supabase is not configured.')),
+    ]).then(([loadedRooms, result, staysResult]) => {
       if (!active) return;
       if (result.error) throw new Error(`Could not load blocked dates: ${result.error.message}`);
+      if (staysResult.error) throw new Error(`Could not load reserved stays: ${staysResult.error.message}`);
       setRooms(loadedRooms);
       setBlockedDates((result.data ?? []) as BlockedDate[]);
+      setReservedStays(((staysResult.data ?? []) as ReservedStay[]).filter((stay) =>
+        stay.status !== 'awaiting_payment' ||
+        (stay.hold_expires_at !== null && Date.parse(stay.hold_expires_at) > Date.now()),
+      ));
       setApartmentSlug((current) => current || loadedRooms[0]?.slug || '');
       setError('');
     }).catch((cause: unknown) => {
@@ -483,6 +520,38 @@ export function AdminAvailability() {
         <label className={labelClass}>Reason (optional)<input maxLength={300} value={reason} onChange={(event) => setReason(event.target.value)} className={fieldClass} /></label>
         <button type="submit" disabled={saving || !rooms.length} className="btn-gold mt-2 inline-flex items-center justify-center gap-2 px-4 py-3 text-xs uppercase tracking-[0.12em] disabled:opacity-50"><Check className="h-4 w-4" aria-hidden="true" />{saving ? 'Saving…' : 'Block dates'}</button>
       </form>
+      <section className="border border-ink-100 bg-paper">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 p-5">
+          <div>
+            <h2 className="font-serif text-2xl text-ink-900">Reserved stays</h2>
+            <p className="mt-1 text-sm text-ink-500">Confirmed stays and active payment holds are automatically unavailable to guests.</p>
+          </div>
+          <button type="button" onClick={() => setRefresh((value) => value + 1)} className="btn-outline inline-flex items-center gap-2 px-3 py-2 text-xs uppercase tracking-[0.1em]">
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+            Refresh
+          </button>
+        </div>
+        {loading ? <p className="p-8 text-sm text-ink-500">Loading reserved stays…</p> : reservedStays.length === 0 ? (
+          <p className="p-8 text-sm text-ink-500">No upcoming confirmed stays or active payment holds.</p>
+        ) : (
+          <ul className="divide-y divide-ink-100">
+            {reservedStays.map((stay) => (
+              <li key={stay.id} className="flex flex-wrap items-center justify-between gap-4 p-5">
+                <div>
+                  <p className="font-medium text-ink-900">{rooms.find((room) => room.slug === stay.apartment_slug)?.name ?? stay.apartment_slug}</p>
+                  <p className="mt-1 text-sm text-ink-600">{stay.check_in} – {stay.check_out}</p>
+                  {stay.booking_reference && <p className="mt-1 font-mono text-xs text-ink-400">{stay.booking_reference}</p>}
+                </div>
+                <span className={`px-2.5 py-1 text-[0.65rem] font-medium uppercase tracking-[0.12em] ${
+                  stay.status === 'awaiting_payment' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-50 text-emerald-800'
+                }`}>
+                  {stay.status === 'awaiting_payment' ? 'Active hold' : stay.status.replace('_', ' ')}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
       <section className="border border-ink-100 bg-paper">
         <h2 className="border-b border-ink-100 p-5 font-serif text-2xl text-ink-900">Blocked dates</h2>
         {loading ? <p className="p-8 text-sm text-ink-500">Loading room availability…</p> : blockedDates.length === 0 ? <p className="p-8 text-sm text-ink-500">No manual date blocks. Confirmed bookings and active holds are managed automatically.</p> : (

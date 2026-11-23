@@ -37,7 +37,7 @@ export default function GalleryPage() {
             Light, material and <span className="italic text-gold-light">quiet detail.</span>
           </>
         }
-        intro="A visual record of the nine residences, their interiors and the building itself — photographed on the property in Kimironko."
+        intro="A visual record of the private bedrooms and shared apartment environments photographed on the property in Kimironko."
         image={media.introWide}
         meta={`${galleryPhotos.length} photographs`}
       />
@@ -126,7 +126,7 @@ export default function GalleryPage() {
       </section>
 
       <GoldMarquee
-        items={['Photographed on the property', 'A1 — C3', 'Kimironko · Kigali', 'Nine residences']}
+        items={['Photographed on the property', 'A1 — C2', 'Kimironko · Kigali', 'Eight private bedrooms']}
       />
 
       <section className="bg-paper-warm py-16 md:py-24">

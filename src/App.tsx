@@ -17,6 +17,7 @@ import NotFoundPage from '@/pages/NotFoundPage';
 import BookingPage from '@/pages/BookingPage';
 import BookingConfirmationPage from '@/pages/BookingConfirmationPage';
 import BookingCheckoutPage from '@/pages/BookingCheckoutPage';
+import BookingRequestTrackerPage from '@/pages/BookingRequestTrackerPage';
 import { EASE } from '@/lib/motion';
 
 function PublicSiteLayout() {
@@ -58,6 +59,7 @@ function App() {
           <Route path="/terms" element={<PolicyPage slug="terms" />} />
           <Route path="/cancellation" element={<PolicyPage slug="cancellation" />} />
           <Route path="/booking" element={<BookingPage />} />
+          <Route path="/booking/track" element={<BookingRequestTrackerPage />} />
           <Route path="/booking/checkout" element={<BookingCheckoutPage />} />
           <Route path="/booking/confirmation" element={<BookingConfirmationPage />} />
           <Route path="*" element={<NotFoundPage />} />

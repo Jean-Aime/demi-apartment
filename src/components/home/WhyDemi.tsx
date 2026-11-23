@@ -3,8 +3,8 @@ import SectionLabel from '@/components/ui/SectionLabel';
 
 const reasons = [
   {
-    title: 'Nine private apartments',
-    body: 'A self-contained residence for every stay, numbered A1 to C3.',
+    title: 'Three shared apartment environments',
+    body: 'Eight private bedrooms, numbered A1 to C2, with shared living rooms and kitchens.',
   },
   {
     title: 'Verified information',

@@ -75,6 +75,10 @@ export default function BookingPage() {
               <h2 className="display mt-4 text-[clamp(2rem,3.4vw,3rem)] text-ink-900">
                 {requestedSlug ? 'Check your dates.' : 'Begin your stay.'}
               </h2>
+              <Link to="/booking/track" className="link-line mt-4 text-sm text-ink-700">
+                Already sent a request? Track its status
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
             </Reveal>
 
             <div className="mt-8">

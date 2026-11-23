@@ -6,6 +6,7 @@ import Reveal from '@/components/Reveal';
 import SectionLabel from '@/components/ui/SectionLabel';
 import { media } from '@/data/media';
 import { usePropertySettings } from '@/hooks/usePropertySettings';
+import { useSearchParams } from 'react-router-dom';
 
 const DIRECTIONS_URL = 'https://www.google.com/maps/dir/?api=1&destination=Kimironko+Kigali+Rwanda';
 const MAP_EMBED_URL =
@@ -13,6 +14,13 @@ const MAP_EMBED_URL =
 
 export default function ContactPage() {
   const contact = usePropertySettings();
+  const [searchParams] = useSearchParams();
+  const paymentMethodRequest = searchParams.get('topic') === 'payment';
+  const requestReference = searchParams.get('reference')?.trim().toUpperCase() ?? '';
+  const validRequestReference = /^DEMI-\d{4}-[A-Z0-9]{6}$/.test(requestReference) ? requestReference : '';
+  const enquiryMessage = validRequestReference
+    ? `Hello,\n\nI would like to ask about another payment method for my reservation request ${validRequestReference}.\n\nPlease let me know the available options.`
+    : '';
 
   const channels = [
     { icon: Mail, label: 'Email', value: contact.email, href: `mailto:${contact.email}`, external: false },
@@ -45,8 +53,9 @@ export default function ContactPage() {
             </Reveal>
             <Reveal delay={100} className="md:col-span-4 md:col-start-9">
               <p className="text-[0.95rem] leading-[1.85] text-ink-500">
-                The team looks after the nine residences and answers reservation questions directly. Written enquiries
-                are usually the quickest way to share dates and details.
+                {paymentMethodRequest
+                  ? 'Ask the property about another payment option. Include your booking reference, but never send card numbers, security codes, or banking passwords.'
+                  : 'The team looks after the eight bedrooms and answers reservation questions directly. Written enquiries are usually the quickest way to share dates and details.'}
               </p>
             </Reveal>
           </div>
@@ -109,7 +118,11 @@ export default function ContactPage() {
 
           <Reveal delay={120} className="md:col-span-7 md:col-start-6">
             <div className="border border-ink-200/70 bg-paper p-6 sm:p-8 md:p-10">
-              <EnquiryForm email={contact.email} />
+              <EnquiryForm
+                email={contact.email}
+                defaultSubject={paymentMethodRequest ? 'Payment method request' : undefined}
+                defaultMessage={enquiryMessage}
+              />
             </div>
           </Reveal>
         </div>

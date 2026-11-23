@@ -28,7 +28,7 @@ export default function ExperiencePage() {
         }
         intro="The details, private spaces and warm welcome that shape a stay at DEMI APARTMENT."
         image={media.experienceLarge}
-        meta="Nine residences · Kimironko"
+        meta="Eight bedrooms · Three apartments · Kimironko"
       />
 
       <section className="bg-paper py-16 md:py-24">
@@ -76,9 +76,9 @@ export default function ExperiencePage() {
                   A door that closes, and a <span className="italic text-gold-light">day that is yours.</span>
                 </h2>
                 <p className="mt-6 max-w-lg text-[0.95rem] leading-[1.85] text-paper/60">
-                  Each of the nine apartments is self-contained, with its own living space, kitchen and bathroom. One
-                  reservation, one residence. There is no shared guest lounge to negotiate and no schedule imposed on
-                  your morning.
+                  Each reservation is for one private bedroom within Apartment A, B or C. Guests share that apartment
+                  group&apos;s living room and kitchen with the other guests staying there. The bedroom remains private and
+                  personal.
                 </p>
               </Reveal>
               <ol className="mt-9 border-t border-paper/15">
@@ -134,7 +134,7 @@ export default function ExperiencePage() {
         </div>
       </section>
 
-      <GoldMarquee items={['Kimironko · Kigali', 'Nine private apartments', 'Designed for quiet stays', 'A1 — C3']} />
+      <GoldMarquee items={['Kimironko · Kigali', 'Eight private bedrooms', 'Three shared apartment environments', 'A1 — C2']} />
 
       <section className="bg-paper py-16 md:py-24">
         <div className="mx-auto grid max-w-site gap-12 px-5 sm:px-6 md:grid-cols-12 md:items-center md:gap-x-8 md:px-12 lg:px-16">

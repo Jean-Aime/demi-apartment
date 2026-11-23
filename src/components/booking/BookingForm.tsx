@@ -26,6 +26,7 @@ import {
   type PropertyAmenity,
   type PropertyHouseRule,
 } from '@/lib/propertyContent';
+import { subscribeToPropertyDataChanges } from '@/lib/propertyDataEvents';
 
 type SearchResult = {
   apartment: Apartment;
@@ -115,18 +116,21 @@ export default function BookingForm({
 
   useEffect(() => {
     let active = true;
-    fetchPublishedHouseRules()
-      .then((rules) => {
+    const loadRules = async () => {
+      try {
+        const rules = await fetchPublishedHouseRules();
         if (active) {
           setPublishedRules(rules);
           setRulesError('');
         }
-      })
-      .catch((cause: unknown) => {
+      } catch (cause: unknown) {
         if (!active) return;
         setRulesError(cause instanceof Error ? cause.message : 'Published house rules could not be loaded.');
-      });
-    return () => { active = false; };
+      }
+    };
+    void loadRules();
+    const unsubscribe = subscribeToPropertyDataChanges(() => { void loadRules(); });
+    return () => { active = false; unsubscribe(); };
   }, []);
 
   async function searchAvailability() {
@@ -344,6 +348,7 @@ export default function BookingForm({
                 <img src={apartment.photo.src} alt={apartment.photo.alt} loading="lazy" className="aspect-[4/3] w-full object-cover sm:aspect-auto sm:h-28" />
                 <div>
                   <h3 className="display text-[1.6rem] text-ink-900">{apartment.name}</h3>
+                  {apartment.apartmentGroup && <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-gold-deep">Apartment {apartment.apartmentGroup} · Private bedroom</p>}
                   <p className="mt-2 text-sm text-ink-500">{apartment.summary}</p>
                   <p className="mt-2 text-xs text-ink-500">
                     {apartment.bedConfiguration ?? 'Bed details to be confirmed'}
@@ -460,6 +465,11 @@ export default function BookingForm({
               <img src={selectedApartment.photo.src} alt={selectedApartment.photo.alt} className="h-40 w-full object-cover sm:w-52" />
               <div>
                 <h3 className="display text-[1.6rem] text-ink-900">{selectedApartment.name}</h3>
+                {selectedApartment.apartmentGroup && (
+                  <p className="mt-2 text-sm text-gold-deep">
+                    Private bedroom in Apartment {selectedApartment.apartmentGroup}
+                  </p>
+                )}
                 <p className="mt-3 text-sm text-ink-600">{formatIsoDate(checkIn)} – {formatIsoDate(checkOut)} ({nights} {nights === 1 ? 'night' : 'nights'})</p>
                 <p className="mt-2 text-sm text-ink-600">{adults} {adults === 1 ? 'adult' : 'adults'}{children > 0 ? `, ${children} ${children === 1 ? 'child' : 'children'}` : ''}</p>
               </div>
@@ -509,6 +519,7 @@ export default function BookingForm({
             <input type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} className="mt-1 h-4 w-4 accent-[#B49A62]" />
             <span>
               I have reviewed the <a className="underline hover:text-gold" href="/terms" target="_blank" rel="noreferrer">terms</a> and <a className="underline hover:text-gold" href="/privacy" target="_blank" rel="noreferrer">privacy information</a>, and accept the verified house rules listed above.
+              {selectedApartment?.apartmentGroup && ` I understand that I am reserving ${selectedApartment.name}, a private bedroom in Apartment ${selectedApartment.apartmentGroup}, and that I share Apartment ${selectedApartment.apartmentGroup}'s living room and kitchen with other guests in that apartment.`}
               {requestOnly
                 ? ' I understand this is a request only; my stay is not confirmed or held, and the property must verify the details and availability.'
                 : ' I understand the draft cancellation policy must be confirmed by the property before payment.'}
@@ -544,11 +555,14 @@ export default function BookingForm({
           <p className="border-l-2 border-gold bg-paper-warm px-4 py-3 text-sm text-ink-700">
             Request reference: <span className="font-semibold">{submittedRequest}</span>
           </p>
-          <p className="text-sm text-ink-500">No payment has been taken. Continue to the payment step for information about what happens next.</p>
+          <p className="text-sm text-ink-500">No payment has been taken. Keep this reference and use the same email address to check for updates. Continue for post-confirmation payment options.</p>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={() => setStep(6)} className="btn-gold inline-flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-[0.12em]">
               Continue to payment <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </button>
+            <Link to={`/booking/track?reference=${encodeURIComponent(submittedRequest)}`} className="btn-outline inline-flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-[0.12em]">
+              Track request status <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
             <Link to={getApartmentPath(selectedApartment)} className="btn-outline px-5 py-3 text-xs uppercase tracking-[0.12em]">Back to {selectedApartment.name}</Link>
           </div>
         </section>
@@ -568,27 +582,48 @@ export default function BookingForm({
           <div className="border-l-2 border-gold bg-paper-warm px-4 py-4">
             <p className="text-sm font-medium text-ink-900">Request reference: {submittedRequest}</p>
             <p className="mt-2 text-sm leading-relaxed text-ink-600">
-              After the property confirms your stay, contact the team to arrange payment. Never send card numbers or security codes by email or through this form.
+              Keep this reference. You can check the request status later with this reference and the email used to submit it. Never send card numbers or security codes by email or through this form.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <article className="border border-ink-100 p-4">
               <p className="text-sm font-medium text-ink-900">Card payment</p>
               <p className="mt-2 text-sm leading-relaxed text-ink-600">
-                Available only after the property confirms your request. Card details will be entered on Flutterwave’s secure checkout, never on this website.
+                If accepted for your stay, card payment may be offered through a secure Flutterwave checkout link, if enabled. Card details are never entered on this website.
               </p>
             </article>
             <article className="border border-ink-100 p-4">
               <p className="text-sm font-medium text-ink-900">Bank transfer</p>
               <p className="mt-2 text-sm leading-relaxed text-ink-600">
-                Bank transfer instructions are not available yet. The property will provide verified account details after confirming your request.
+                Ask the property about bank transfer after confirmation. It will provide verified account details and the final amount. No payment is due now.
               </p>
+            </article>
+            <article className="border border-ink-100 p-4">
+              <p className="text-sm font-medium text-ink-900">Mobile money</p>
+              <p className="mt-2 text-sm leading-relaxed text-ink-600">
+                Ask about MTN MoMo or Airtel Money after confirmation. The property will provide the current verified number and recipient name. Do not send money before confirmation.
+              </p>
+            </article>
+            <article className="flex flex-col items-start border border-ink-100 p-4">
+              <p className="text-sm font-medium text-ink-900">Another payment method</p>
+              <p className="mt-2 text-sm leading-relaxed text-ink-600">
+                Need a different method? Request it from the property after your stay is confirmed.
+              </p>
+              <Link
+                to={`/contact?topic=payment&reference=${encodeURIComponent(submittedRequest)}`}
+                className="link-line mt-4 text-ink-900"
+              >
+                Request another method <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
             </article>
           </div>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={() => setStep(5)} className="btn-outline inline-flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-[0.12em]">
               <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to request
             </button>
+            <Link to={`/booking/track?reference=${encodeURIComponent(submittedRequest)}`} className="btn-outline inline-flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-[0.12em]">
+              Track request status <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
             <Link to="/contact" className="btn-gold inline-flex items-center gap-2 px-5 py-3 text-xs uppercase tracking-[0.12em]">
               Contact the property <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>

@@ -15,6 +15,8 @@ type EnquiryValues = z.infer<typeof enquirySchema>;
 
 interface EnquiryFormProps {
   email: string;
+  defaultSubject?: string;
+  defaultMessage?: string;
 }
 
 /**
@@ -22,7 +24,11 @@ interface EnquiryFormProps {
  * pre-filled email in the guest's own mail client. Nothing is transmitted
  * or stored by this page, and the interface says so.
  */
-export default function EnquiryForm({ email }: EnquiryFormProps) {
+export default function EnquiryForm({
+  email,
+  defaultSubject = 'Reservation enquiry',
+  defaultMessage = '',
+}: EnquiryFormProps) {
   const [prepared, setPrepared] = useState(false);
   const {
     register,
@@ -30,7 +36,7 @@ export default function EnquiryForm({ email }: EnquiryFormProps) {
     formState: { errors },
   } = useForm<EnquiryValues>({
     resolver: zodResolver(enquirySchema),
-    defaultValues: { name: '', email: '', subject: 'Reservation enquiry', message: '' },
+    defaultValues: { name: '', email: '', subject: defaultSubject, message: defaultMessage },
   });
 
   function onSubmit(values: EnquiryValues) {
@@ -82,6 +88,7 @@ export default function EnquiryForm({ email }: EnquiryFormProps) {
         <label htmlFor="contact-subject" className="field-label">Subject</label>
         <select id="contact-subject" className="field" {...register('subject')}>
           <option>Reservation enquiry</option>
+          <option>Payment method request</option>
           <option>A question about a residence</option>
           <option>Arrival and directions</option>
           <option>Something else</option>

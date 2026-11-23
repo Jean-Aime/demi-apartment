@@ -7,7 +7,7 @@ export interface GalleryPhoto extends Photo {
   title: string;
 }
 
-const unitNumbers = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3'];
+const unitNumbers = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2'];
 
 const detailTitles = [
   'Bathroom and shower',

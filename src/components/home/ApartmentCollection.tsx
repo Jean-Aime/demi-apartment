@@ -1,143 +1,48 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight } from 'lucide-react';
-import type { Apartment } from '@/data/apartments';
+import { ArrowUpRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import Reveal from '@/components/Reveal';
-import SpecItem from '@/components/apartments/SpecItem';
 import { useApartments } from '@/hooks/useApartments';
 import { getApartmentPath } from '@/lib/apartmentRoutes';
+import {
+  fetchApartmentGroups,
+  fetchPublicSharedFacilities,
+  type ApartmentGroup,
+  type SharedFacility,
+} from '@/lib/propertyApartmentGroups';
+import { subscribeToPropertyDataChanges } from '@/lib/propertyDataEvents';
 import SectionLabel from '@/components/ui/SectionLabel';
-
-function RoomMeta({ apartment }: { apartment: Apartment }) {
-  return (
-    <dl className="mt-6 grid grid-cols-3 gap-x-4 gap-y-4 border-t border-ink-200/70 pt-5">
-      <SpecItem label="Beds" value={apartment.bedConfiguration} />
-      <SpecItem label="Guests" value={apartment.maxOccupancy ? `Up to ${apartment.maxOccupancy}` : undefined} />
-      <SpecItem label="Bathrooms" value={apartment.bathrooms ? String(apartment.bathrooms) : undefined} />
-    </dl>
-  );
-}
-
-function RoomLinks({ apartment }: { apartment: Apartment }) {
-  return (
-    <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-4">
-      <Link to={getApartmentPath(apartment)} className="btn-outline !px-5 !py-3.5">
-        View residence
-        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-      </Link>
-      <Link
-        to={`/booking?apartment=${apartment.slug}`}
-        className="link-line text-ink-600 hover:text-ink-900"
-      >
-        {apartment.bookingEnabled ? 'Check dates' : 'Request a stay'}
-        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-      </Link>
-    </div>
-  );
-}
-
-function SplitRow({ apartment, index, total }: { apartment: Apartment; index: number; total: number }) {
-  return (
-    <div className="grid items-center gap-8 md:grid-cols-12 md:gap-x-8">
-      <Reveal className="md:col-span-7">
-        <Link to={getApartmentPath(apartment)} className="group block overflow-hidden bg-paper-muted">
-          <div className="aspect-[4/3] w-full overflow-hidden">
-            <img
-              src={apartment.photo.src}
-              alt={apartment.photo.alt}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-[1.035]"
-            />
-          </div>
-        </Link>
-      </Reveal>
-      <div className="md:col-span-4 md:col-start-9">
-        <Reveal delay={100}>
-          <p className="font-display text-[0.9rem] italic tabular-nums text-gold-ink/70">
-            {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
-          </p>
-          <p className="eyebrow mt-3 text-gold-ink">Residence {apartment.number}</p>
-          <h2 className="display mt-3 text-[clamp(2.4rem,4vw,3.5rem)] text-ink-900">{apartment.name}</h2>
-          <p className="mt-4 max-w-md text-[0.95rem] leading-[1.85] text-ink-500">{apartment.summary}</p>
-          <RoomMeta apartment={apartment} />
-          <RoomLinks apartment={apartment} />
-        </Reveal>
-      </div>
-    </div>
-  );
-}
-
-function OffsetRow({ apartment, index, total }: { apartment: Apartment; index: number; total: number }) {
-  return (
-    <div className="grid gap-10 md:grid-cols-12 md:gap-x-8">
-      <div className="md:col-span-5 md:pt-16">
-        <Reveal>
-          <p className="font-display text-[0.9rem] italic tabular-nums text-gold-ink/70">
-            {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
-          </p>
-          <p className="eyebrow mt-3 text-gold-ink">Residence {apartment.number}</p>
-          <h2 className="display mt-3 text-[clamp(2.4rem,4vw,3.5rem)] text-ink-900">{apartment.name}</h2>
-          <p className="mt-4 max-w-md text-[0.95rem] leading-[1.85] text-ink-500">{apartment.summary}</p>
-          <RoomMeta apartment={apartment} />
-          <RoomLinks apartment={apartment} />
-        </Reveal>
-      </div>
-      <Reveal delay={120} className="md:col-span-6 md:col-start-7">
-        <Link to={getApartmentPath(apartment)} className="group block overflow-hidden bg-paper-muted">
-          <div className="aspect-[4/5] w-full overflow-hidden">
-            <img
-              src={apartment.photo.src}
-              alt={apartment.photo.alt}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-[1.035]"
-            />
-          </div>
-        </Link>
-      </Reveal>
-    </div>
-  );
-}
-
-function FeatureRow({ apartment, index, total }: { apartment: Apartment; index: number; total: number }) {
-  return (
-    <Reveal>
-      <article className="relative isolate overflow-hidden bg-ink-900 text-paper">
-        <Link to={getApartmentPath(apartment)} className="group block">
-          <div className="aspect-[4/5] w-full overflow-hidden sm:aspect-[16/10] md:aspect-[21/9]">
-            <img
-              src={apartment.photo.src}
-              alt={apartment.photo.alt}
-              loading="lazy"
-              className="h-full w-full object-cover opacity-85 transition-transform duration-[1.6s] ease-out group-hover:scale-[1.03] group-hover:opacity-100"
-            />
-          </div>
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 bg-[linear-gradient(0deg,rgba(8,8,8,0.85),rgba(8,8,8,0.05)_60%)]"
-          />
-        </Link>
-        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-5 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-8 md:p-10">
-          <div>
-            <p className="font-sans text-[0.6rem] font-semibold uppercase tracking-[0.24em] text-gold-light">
-              {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')} · Residence {apartment.number}
-            </p>
-            <h2 className="display mt-2 text-[clamp(2.2rem,4vw,3.5rem)] text-paper">{apartment.name}</h2>
-            <p className="mt-3 max-w-lg text-[0.9rem] leading-[1.75] text-paper/70">{apartment.summary}</p>
-          </div>
-          <Link
-            to={getApartmentPath(apartment)}
-            className="inline-flex shrink-0 items-center gap-3 border border-paper/40 px-5 py-3 font-sans text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-paper transition-colors hover:border-gold-light hover:bg-gold-light hover:text-ink-900"
-          >
-            View residence
-            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-      </article>
-    </Reveal>
-  );
-}
 
 export default function ApartmentCollection() {
   const { apartments, error } = useApartments();
+  const [groups, setGroups] = useState<ApartmentGroup[]>([]);
+  const [facilities, setFacilities] = useState<SharedFacility[]>([]);
+  const [groupsError, setGroupsError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    const loadGroups = async () => {
+      try {
+        const [nextGroups, nextFacilities] = await Promise.all([
+          fetchApartmentGroups(),
+          fetchPublicSharedFacilities(),
+        ]);
+        if (active) {
+          setGroups(nextGroups);
+          setFacilities(nextFacilities);
+          setGroupsError('');
+        }
+      } catch (cause) {
+        if (!active) return;
+        const message = cause instanceof Error ? cause.message : 'Apartment information could not be loaded.';
+        setGroupsError(message);
+        console.error(message);
+      }
+    };
+    void loadGroups();
+    const unsubscribe = subscribeToPropertyDataChanges(() => { void loadGroups(); });
+    return () => { active = false; unsubscribe(); };
+  }, []);
 
   return (
     <section className="bg-paper py-16 md:py-24">
@@ -146,34 +51,75 @@ export default function ApartmentCollection() {
           <Reveal className="md:col-span-7">
             <SectionLabel index="01">The apartment collection</SectionLabel>
             <h2 className="display mt-5 text-[clamp(2.4rem,4.6vw,4.5rem)] text-ink-900">
-              Explore all {apartments.length} <span className="italic text-gold-ink">residences.</span>
+              Explore {apartments.length} private <span className="italic text-gold-ink">bedrooms.</span>
             </h2>
           </Reveal>
           <Reveal delay={100} className="md:col-span-4 md:col-start-9">
             <p className="text-[0.95rem] leading-[1.85] text-ink-500">
-              Open any room for its gallery, verified stay essentials, amenities and reservation options.
+              Demi Apartment is arranged in three shared apartment environments. Each reservation is for an individual private bedroom.
             </p>
           </Reveal>
         </div>
 
         <div className="mt-14 space-y-16 md:space-y-24">
-          {apartments.map((apartment, index) => {
-            const variant = index % 3;
-            if (variant === 2) {
-              return <FeatureRow key={apartment.slug} apartment={apartment} index={index} total={apartments.length} />;
-            }
-            if (variant === 1) {
-              return <OffsetRow key={apartment.slug} apartment={apartment} index={index} total={apartments.length} />;
-            }
-            return <SplitRow key={apartment.slug} apartment={apartment} index={index} total={apartments.length} />;
+          {groups.map((group) => {
+            const rooms = apartments.filter((room) => room.apartmentGroup === group.identifier);
+            const shared = facilities.filter((facility) =>
+              groups.find((item) => item.id === facility.apartment_group_id)?.identifier === group.identifier,
+            );
+            return (
+              <section key={group.id} className="border-t border-ink-200/70 pt-10">
+                <Reveal>
+                  <SectionLabel>Apartment {group.identifier}</SectionLabel>
+                  <h3 className="display mt-4 text-[clamp(2.2rem,4vw,3.7rem)] text-ink-900">{group.name}</h3>
+                  <p className="mt-4 max-w-2xl text-[0.95rem] leading-[1.85] text-ink-500">
+                    {group.description} Guests reserve a private bedroom and share the designated living room and kitchen with other guests staying in this apartment.
+                  </p>
+                </Reveal>
+                {shared.length > 0 && (
+                  <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                    {shared.map((facility) => (
+                      <article key={facility.id} className="border border-ink-100 bg-paper-warm p-5">
+                        {facility.photos[0] && (
+                          <img src={facility.photos[0].src} alt={facility.photos[0].alt} className="mb-4 aspect-[4/3] w-full object-cover" loading="lazy" />
+                        )}
+                        <p className="eyebrow text-gold-ink">{facility.facility_type === 'living_room' ? 'Shared living room' : 'Shared kitchen'}</p>
+                        <h4 className="mt-2 font-display text-xl text-ink-900">{facility.name}</h4>
+                        {facility.description && <p className="mt-2 text-sm leading-relaxed text-ink-500">{facility.description}</p>}
+                      </article>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-10 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+                  {rooms.map((apartment) => (
+                    <article key={apartment.slug} className="border border-ink-100 bg-paper-warm">
+                      <Link to={getApartmentPath(apartment)} className="group block">
+                        <img src={apartment.photo.src} alt={apartment.photo.alt} className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                      </Link>
+                      <div className="p-5">
+                        <p className="eyebrow text-gold-ink">Apartment {group.identifier}</p>
+                        <h4 className="mt-2 font-display text-2xl text-ink-900">{apartment.name}</h4>
+                        <p className="mt-3 text-sm leading-relaxed text-ink-500">
+                          Private bedroom with access to Apartment {group.identifier}&apos;s shared living room and kitchen.
+                        </p>
+                        <Link to={getApartmentPath(apartment)} className="link-line mt-5 text-ink-900">
+                          Explore bedroom <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                        </Link>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            );
           })}
         </div>
 
         {error && (
           <p className="mt-10 text-[0.7rem] text-ink-400" role="status">
-            Showing the saved residence list while live property data is unavailable.
+            Showing the saved bedroom list while live property data is unavailable.
           </p>
         )}
+        {groupsError && <p className="mt-4 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">{groupsError}</p>}
       </div>
     </section>
   );

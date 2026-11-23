@@ -60,19 +60,61 @@ export async function fetchPublishedHouseRules(): Promise<PropertyHouseRule[]> {
 
 export async function uploadPropertyImage(file: File, folder: string): Promise<string> {
   if (!supabase) throw new Error('Supabase is not configured.');
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-  if (!allowedTypes.includes(file.type)) {
-    throw new Error('Choose a JPG, PNG, or WebP image.');
-  }
   if (file.size > 5 * 1024 * 1024) {
     throw new Error('Images must be 5 MB or smaller.');
   }
 
-  const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const filenameExtension = file.name.match(/\.([a-z0-9]{1,10})$/i)?.[1]?.toLowerCase() ?? '';
+  const heicMimeType = /^image\/hei[cf](?:$|-)/i.test(file.type);
+  const isHeic = heicMimeType || filenameExtension === 'heic' || filenameExtension === 'heif';
+  const commonImageMimeTypes: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    avif: 'image/avif',
+    bmp: 'image/bmp',
+    tif: 'image/tiff',
+    tiff: 'image/tiff',
+    svg: 'image/svg+xml',
+    ico: 'image/x-icon',
+  };
+  if (!file.type.startsWith('image/') && !isHeic && !commonImageMimeTypes[filenameExtension]) {
+    throw new Error('Choose an image file. Supported formats include HEIC and HEIF.');
+  }
+
+  let uploadBody: Blob = file;
+  let contentType = file.type.startsWith('image/')
+    ? file.type
+    : isHeic ? 'image/heic' : commonImageMimeTypes[filenameExtension];
+  let extension = filenameExtension || contentType.split('/')[1]?.split(/[;+]/)[0] || 'img';
+
+  if (isHeic) {
+    try {
+      const { default: convertHeic } = await import('heic2any');
+      const converted = await convertHeic({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+      uploadBody = Array.isArray(converted) ? converted[0] : converted;
+      if (!uploadBody) throw new Error('The converter returned no image data.');
+      contentType = 'image/jpeg';
+      extension = 'jpg';
+    } catch (cause) {
+      const details = cause instanceof Error ? ` ${cause.message}` : '';
+      throw new Error(`Could not convert this HEIC/HEIF image for web display.${details}`);
+    }
+  }
+
+  const mimeExtensions: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/svg+xml': 'svg',
+    'image/x-icon': 'ico',
+    'image/vnd.microsoft.icon': 'ico',
+  };
+  extension = mimeExtensions[contentType] ?? extension;
   const path = `${folder}/${crypto.randomUUID()}.${extension}`;
   const { error } = await supabase.storage
     .from('property-media')
-    .upload(path, file, { contentType: file.type, upsert: false });
+    .upload(path, uploadBody, { contentType, upsert: false });
   if (error) throw new Error(`Could not upload image: ${error.message}`);
   return supabase.storage.from('property-media').getPublicUrl(path).data.publicUrl;
 }

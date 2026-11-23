@@ -74,9 +74,10 @@ export default function GalleryLightbox({ photos, index, onIndexChange, onClose,
           ref={closeRef}
           type="button"
           onClick={onClose}
-          className="flex h-10 w-10 items-center justify-center border border-paper/25 text-paper transition-colors hover:border-gold-light hover:text-gold-light"
+          aria-label="Close photo viewer"
+          className="inline-flex h-12 items-center justify-center gap-2 border border-paper bg-paper px-4 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-900 shadow-lg transition-colors hover:border-gold-light hover:bg-gold-light"
         >
-          <span className="sr-only">Close viewer</span>
+          <span>Close gallery</span>
           <X className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
         </button>
       </div>

@@ -1,7 +1,6 @@
 import { ArrowDown, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { media } from '@/data/media';
 import SectionLabel from '@/components/ui/SectionLabel';
 import { EASE } from '@/lib/motion';
 
@@ -16,8 +15,8 @@ export default function Hero() {
   return (
     <section className="relative isolate flex min-h-[100svh] flex-col justify-end overflow-hidden bg-ink-900 text-paper">
       <motion.img
-        src={media.hero.src}
-        alt={media.hero.alt}
+        src="/images/hero-section.png"
+        alt="Demi Apartment exterior, with garden, balconies and guest entrance"
         initial={reduceMotion ? false : { scale: 1.12 }}
         animate={{ scale: 1 }}
         transition={{ duration: 3, ease: EASE }}
@@ -32,7 +31,7 @@ export default function Hero() {
         aria-hidden="true"
         className="vertical-label absolute right-6 top-1/3 hidden font-sans text-[0.55rem] uppercase tracking-[0.42em] text-paper/40 lg:block"
       >
-        Nine private residences · Kigali
+        Eight private bedrooms · Kigali
       </span>
 
       <div className="relative mx-auto w-full max-w-site px-5 pb-10 pt-36 sm:px-6 md:px-12 md:pb-12 lg:px-16">
@@ -67,7 +66,7 @@ export default function Hero() {
         >
           <div className="md:col-span-5">
             <p className="max-w-md text-[0.975rem] leading-[1.85] text-paper/80">
-              Nine private serviced residences in Kimironko, shaped by light, material and quiet hospitality. A
+              Eight private bedrooms in three shared apartment environments in Kimironko, shaped by light, material and quiet hospitality. A
               considered address for a stay that feels entirely your own.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-x-7 gap-y-4">
@@ -85,12 +84,12 @@ export default function Hero() {
           <div className="md:col-span-4 md:col-start-9">
             <div className="surface-gold p-5 text-ink-900 md:p-6">
               <p className="eyebrow text-ink-900/60">The collection</p>
-              <p className="mt-3 font-display text-[2rem] leading-none tracking-[-0.02em]">Nine residences</p>
+              <p className="mt-3 font-display text-[2rem] leading-none tracking-[-0.02em]">Eight bedrooms</p>
               <div className="mt-4 flex items-center justify-between border-t border-ink-900/20 pt-3">
-                <span className="font-sans text-[0.6rem] font-semibold uppercase tracking-[0.24em]">A1 — C3</span>
+                <span className="font-sans text-[0.6rem] font-semibold uppercase tracking-[0.24em]">A1 — C2</span>
                 <Link
                   to="/apartments"
-                  aria-label="View all nine residences"
+                  aria-label="View all eight private bedrooms"
                   className="flex h-9 w-9 items-center justify-center border border-ink-900/30 transition-colors hover:bg-ink-900 hover:text-gold-light"
                 >
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />

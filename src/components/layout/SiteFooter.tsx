@@ -21,9 +21,9 @@ export default function SiteFooter() {
       <div className="relative mx-auto max-w-site px-5 pb-10 pt-16 sm:px-6 md:px-12 md:pt-20 lg:px-16">
         <div className="grid gap-x-8 gap-y-12 md:grid-cols-12">
           <div className="md:col-span-12 lg:col-span-5">
-            <BrandMark light size="lg" />
+            <BrandMark size="lg" />
             <p className="mt-8 max-w-md font-display text-[clamp(1.9rem,3vw,2.75rem)] leading-[1.08] tracking-[-0.02em] text-paper">
-              Nine private residences, composed around light, quiet and <span className="italic text-gold-light">arrival.</span>
+              Eight private bedrooms across three apartment groups, composed around light, quiet and <span className="italic text-gold-light">arrival.</span>
             </p>
             <p className="mt-7 font-sans text-[0.6rem] font-semibold uppercase tracking-[0.28em] text-gold-light/80">
               Kimironko · Kigali · Rwanda
@@ -59,7 +59,7 @@ export default function SiteFooter() {
               ))}
               <li>
                 <Link to="/apartments" className="text-gold-light/90 transition-colors duration-300 hover:text-gold-light">
-                  All nine residences
+                  All private bedrooms
                 </Link>
               </li>
             </ul>

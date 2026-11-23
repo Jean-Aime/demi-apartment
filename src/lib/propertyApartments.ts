@@ -8,6 +8,11 @@ export const managedApartmentSchema = z.object({
   slug: z.string(),
   number: z.string(),
   name: z.string(),
+  apartment_group_id: z.string().uuid().nullable(),
+  apartment_group: z.object({
+    identifier: z.enum(['A', 'B', 'C']),
+    name: z.string(),
+  }).nullable().optional(),
   summary: z.string(),
   photo_src: z.string(),
   photo_alt: z.string(),
@@ -36,13 +41,15 @@ export const managedApartmentSchema = z.object({
 export type ManagedApartment = z.infer<typeof managedApartmentSchema>;
 
 const selectFields =
-  'slug, number, name, summary, photo_src, photo_alt, photos, bed_configuration, bed_type, bed_quantity, bed_dimensions, bed_configuration_verified, bedrooms, bathrooms, max_occupancy, max_occupancy_verified, size_sqm, check_in, check_out, minimum_stay, facilities, house_rules, starting_price_amount, starting_price_currency, booking_enabled, published';
+  'slug, number, name, apartment_group_id, apartment_group:property_apartment_groups(identifier,name), summary, photo_src, photo_alt, photos, bed_configuration, bed_type, bed_quantity, bed_dimensions, bed_configuration_verified, bedrooms, bathrooms, max_occupancy, max_occupancy_verified, size_sqm, check_in, check_out, minimum_stay, facilities, house_rules, starting_price_amount, starting_price_currency, booking_enabled, published';
 
 export function toApartment(row: ManagedApartment, verifiedAmenities = row.facilities): Apartment {
   return {
     slug: row.slug,
     number: row.number,
     name: row.name,
+    apartmentGroup: row.apartment_group?.identifier,
+    apartmentGroupName: row.apartment_group?.name,
     summary: row.summary,
     photo: { src: row.photo_src, alt: row.photo_alt },
     photos: row.photos.length > 0 ? row.photos : [{ src: row.photo_src, alt: row.photo_alt }],
@@ -122,11 +129,13 @@ export function apartmentToRecord(
   apartment: Apartment,
   published: boolean,
   verification: ApartmentVerification,
+  apartmentGroupId?: string | null,
 ) {
   return {
     slug: apartment.slug,
     number: apartment.number,
     name: apartment.name,
+    apartment_group_id: apartmentGroupId ?? null,
     summary: apartment.summary,
     photo_src: apartment.photo.src,
     photo_alt: apartment.photo.alt,
@@ -159,6 +168,7 @@ export function toManagedApartment(apartment: Apartment, published = true): Mana
     slug: apartment.slug,
     number: apartment.number,
     name: apartment.name,
+    apartment_group_id: null,
     summary: apartment.summary,
     photo_src: apartment.photo.src,
     photo_alt: apartment.photo.alt,

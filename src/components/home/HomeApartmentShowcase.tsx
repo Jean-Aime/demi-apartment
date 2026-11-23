@@ -33,7 +33,7 @@ export default function HomeApartmentShowcase() {
           </div>
           <Reveal delay={120} className="md:col-span-4 md:col-start-9">
             <p className="border-t border-ink-300/60 pt-5 text-[0.95rem] leading-[1.85] text-ink-500">
-              Three of the nine apartments. Open any residence for its own photography, verified details and
+              Bedrooms from the three apartment groups. Open any bedroom for its photography, verified details and
               booking options.
             </p>
             <Link to="/apartments" className="link-line mt-5 text-ink-900">

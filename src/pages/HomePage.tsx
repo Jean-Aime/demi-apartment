@@ -22,8 +22,8 @@ export default function HomePage() {
       <GoldMarquee
         items={[
           'Kimironko · Kigali · Rwanda',
-          'Nine private residences',
-          'A1 — C3',
+          'Eight private bedrooms',
+          'Apartments A, B & C',
           'Direct reservations',
           'Architecture and interiors',
         ]}

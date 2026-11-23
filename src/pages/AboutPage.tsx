@@ -11,7 +11,7 @@ import { media } from '@/data/media';
 const principles = [
   {
     title: 'Privacy, by design',
-    body: 'Each of the nine residences is self-contained. A stay is one apartment, not a room in a shared house.',
+    body: 'Each stay reserves one private bedroom. The bedroom belongs to Apartment A, B or C and shares only that apartment’s living room and kitchen.',
   },
   {
     title: 'Clarity, not guesswork',
@@ -33,7 +33,7 @@ export default function AboutPage() {
             A residence shaped by <span className="italic text-gold-light">clarity and restraint.</span>
           </>
         }
-        intro="Nine private serviced apartments in Kimironko, Kigali — designed around light, material and an unhurried way of staying."
+        intro="Eight private bedrooms in three apartment groups in Kimironko, Kigali — designed around light, material and an unhurried way of staying."
         image={media.architectureSide}
         meta="Kimironko · Kigali"
       />
@@ -53,12 +53,12 @@ export default function AboutPage() {
             <Reveal delay={100}>
               <div className="mt-7 space-y-5 text-[0.975rem] leading-[1.9] text-ink-500">
                 <p>
-                  DEMI APARTMENT is a residential building of nine individual apartments in Kimironko, Kigali. Each
-                  residence is numbered and presented on its own — A1 through C3 — with its own photography and its
+                  DEMI APARTMENT is a residential building of eight private bedrooms in three apartment groups in Kimironko, Kigali. Each
+                  bedroom is numbered and presented on its own — A1 through C2 — with its own photography and
                   own verified details.
                 </p>
                 <p>
-                  The apartments are self-contained, with living space, a kitchen and a bathroom. The building is
+                  Bedroom guests share the designated living room and kitchen within their apartment group. The building is
                   composed around terraced balconies and full-height glazing, so the interiors stay calm and bright
                   through the day.
                 </p>
@@ -70,7 +70,7 @@ export default function AboutPage() {
             </Reveal>
             <Reveal delay={180} className="mt-8 border-t border-ink-200 pt-6">
               <Link to="/apartments" className="link-line text-ink-900">
-                Explore the nine residences
+                Explore the bedrooms
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             </Reveal>

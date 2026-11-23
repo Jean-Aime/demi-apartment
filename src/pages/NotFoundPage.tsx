@@ -15,7 +15,7 @@ export default function NotFoundPage() {
             This page has <span className="italic text-gold-light">moved</span> or never existed.
           </>
         }
-        intro="The link may be out of date. Return to the homepage or explore the nine residences."
+        intro="The link may be out of date. Return to the homepage or explore the private bedrooms."
         image={media.hero}
         meta="Error 404"
       />

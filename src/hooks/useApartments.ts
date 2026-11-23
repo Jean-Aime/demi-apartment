@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apartments as fallbackApartments } from '@/data/apartments';
 import { fetchApartments } from '@/lib/propertyApartments';
+import { subscribeToPropertyDataChanges } from '@/lib/propertyDataEvents';
 import type { Apartment } from '@/data/apartments';
 
 export function useApartments() {
@@ -32,6 +33,10 @@ export function useApartments() {
       active = false;
     };
   }, [refreshCount]);
+
+  useEffect(() => subscribeToPropertyDataChanges(() => {
+    setRefreshCount((count) => count + 1);
+  }), []);
 
   return { apartments, loading, error, refresh: () => setRefreshCount((count) => count + 1) };
 }

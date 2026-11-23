@@ -12,7 +12,7 @@ const pillars = [
   },
   {
     title: 'Private by nature',
-    body: 'Each of the nine apartments is self-contained, so the stay remains entirely your own.',
+    body: 'Reserve a private bedroom while sharing the designated living room and kitchen with guests in the same apartment.',
   },
   {
     title: 'Contemporary living',

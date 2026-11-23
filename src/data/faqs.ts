@@ -17,7 +17,7 @@ export const faqs: Faq[] = [
   {
     question: 'How many residences are there?',
     answer:
-      'There are nine individual serviced residences, numbered A1, A2, A3, B1, B2, B3, C1, C2 and C3. Each one has its own photographs, description and booking options.',
+      'Demi Apartment has eight individual private bedrooms: A1, A2, A3, B1, B2, B3, C1 and C2. They are arranged in Apartment A, Apartment B and Apartment C.',
   },
   {
     question: 'How does a reservation work?',
@@ -37,7 +37,7 @@ export const faqs: Faq[] = [
   {
     question: 'Are the residences private?',
     answer:
-      'Yes. Each of the nine residences is a self-contained apartment rather than a shared guest room. The booking flow reserves one residence per reservation.',
+      'Yes. The booking flow reserves one private bedroom. Guests share the designated living room and kitchen with other guests staying in the same apartment group.',
   },
   {
     question: 'Why do some details say “to be confirmed”?',

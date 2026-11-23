@@ -1,6 +1,6 @@
 # DEMI APARTMENT
 
-Website for DEMI APARTMENT, nine luxury serviced residences in Kimironko, Kigali, Rwanda.
+Website for DEMI APARTMENT, eight private bedrooms across three shared apartment groups in Kimironko, Kigali, Rwanda.
 
 ## Stack
 
@@ -33,24 +33,37 @@ The schema lives in migrations applied to your Supabase project. The current mig
 11. `verify_capacity_for_all_rooms`: marks the user-confirmed two-guest capacity verified on A1–C3 while keeping online reservations disabled until each room's bed details are entered and verified.
 12. `public_reservation_requests_for_unbookable_rooms`: lets guests send a clearly labeled, unconfirmed request for a selected published room while its instant-booking setup is incomplete. Requests do not hold dates or take payment.
 13. `secure_checkout_for_existing_holds`: gives the server a payment reference for an existing private checkout hold; it does not create a second booking.
+14. `apartment_groups_and_shared_facilities`: creates Apartment A, B and C, assigns the eight current bedrooms, and stores each apartment's shared living room and kitchen.
+15. `allow_additional_image_formats`: removes the Storage bucket's JPG/PNG/WebP-only restriction so the app can upload other browser-recognized image formats.
+16. `booking_request_status_lookup`: lets a guest retrieve only their request's room, dates, guest count and status by matching the reference and booking email.
 
 Apply them with the Supabase CLI (`supabase db push`) or by running each SQL file in the Supabase SQL editor, in order. All migrations are idempotent.
 
 Public visitors can read booked date ranges and create a reservation only through the validated database function. They cannot read booking rows, change a booking, or mark a payment as paid. A random checkout token grants access only to that reservation's safe summary. Authorized admins can review guest details, search by booking reference, filter by status and check-in dates, and manage booking status.
 
+Guests can use `/booking/track` to follow up with the request reference and booking email. The lookup is read-only and returns only the matching room, dates, guest count and status; it does not create a booking or take payment. Apply migration 16 before enabling the tracker. Payment-method enquiries open the Contact page with the request reference and a prefilled message; the Contact form prepares an email in the guest's mail app and does not send it automatically.
+
 ## Admin dashboard
 
-The admin workspace is available at `/admin` with sections for overview, bookings, apartments, room availability, amenities, house rules, calendar, guests, reports, and property settings. Apply all migrations, create a unique staff account in Supabase Dashboard → Authentication → Users, then set that user's **app metadata** to include `"role": "admin"`. Room profiles and gallery images, guest-visible amenity records, shared property facilities, verified house rules, and date blocks are managed in the dashboard and stored in Supabase. Only amenities/rules marked both verified and published are public. New rooms default to unpublished and booking-disabled; seeded A1–C3 are public but booking-disabled until required facts are verified. The database independently enforces booking readiness and date availability.
+The admin workspace is available at `/admin` with sections for overview, bookings, apartments, room availability, amenities, house rules, calendar, guests, reports, and property settings. Apply all migrations, create a unique staff account in Supabase Dashboard → Authentication → Users, then set that user's **app metadata** to include `"role": "admin"`. Room profiles and gallery images, guest-visible amenity records, shared property facilities, verified house rules, and date blocks are managed in the dashboard and stored in Supabase. Only amenities/rules marked both verified and published are public. New rooms default to unpublished and booking-disabled; the current A1–C2 bedrooms are published but booking-disabled until required facts are verified. The database independently enforces booking readiness and date availability.
 
-The `property-media` Supabase Storage bucket is public-read for website photographs and write-protected to admin accounts. Dashboard image upload accepts JPG, PNG, or WebP up to 5 MB.
+The `property-media` Supabase Storage bucket is public-read for website photographs and write-protected to admin accounts. Dashboard image upload accepts browser-recognized image formats plus HEIC/HEIF up to 5 MB; HEIC/HEIF uploads are converted to JPEG for web display. Pasting a publicly accessible image URL does not require Storage upload.
+
+### Image upload troubleshooting
+
+- Confirm `.env.local` contains the Supabase project's `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (or the supported legacy `VITE_SUPABASE_ANON_KEY`), then restart Vite after changing the file.
+- Apply all migrations to the same Supabase project named by those settings. The `property-media` bucket and its admin upload/public-read policies are created by `configurable_room_content_and_availability`; the final image-format migration must also be applied for additional image formats.
+- Sign in with an account whose Supabase **app metadata** contains `"role": "admin"`. User metadata alone does not grant upload permission.
+- Check the admin page's error message if an upload fails. The image preview appears only after the upload is accepted by Storage; a pasted URL must be publicly accessible to preview.
+- Never put a Supabase service-role key in `.env.local` or any `VITE_` variable.
 
 ## Booking setup and channel management
 
-Beds24 is the selected property-management and channel-management platform for the nine residences. Its published channel-manager information describes two-way connections with Airbnb and Booking.com, plus a direct booking engine. Set up and verify the property, room inventory, rates and restrictions in Beds24 before taking direct online bookings.
+Beds24 is the selected property-management and channel-management platform for the eight private bedrooms. Its published channel-manager information describes two-way connections with Airbnb and Booking.com, plus a direct booking engine. Set up and verify the property, room inventory, rates and restrictions in Beds24 before taking direct online bookings.
 
 The website can embed the property's Beds24 booking engine by setting `VITE_BEDS24_BOOKING_URL` to the secure booking URL from the Beds24 account. The embed is restricted to HTTPS Beds24 domains and is shown only when every published room has booking enabled. Configure and verify the external inventory and channel synchronization before enabling direct bookings.
 
-The website's Supabase calendar includes confirmed stays, unexpired holds and admin-created room-specific date blocks. It is not automatically synchronized with Beds24, Airbnb or Booking.com. Do not accept direct confirmed website reservations alongside OTA bookings until inventory is connected and kept in sync.
+The website's Supabase calendar includes confirmed stays, unexpired holds and admin-created room-specific date blocks. `/admin/availability` lists confirmed stays and active holds separately from manual blocks; guests cannot book those occupied dates. It is not automatically synchronized with Beds24, Airbnb or Booking.com. Do not accept direct confirmed website reservations alongside OTA bookings until inventory is connected and kept in sync.
 
 ## Reservation journey
 
@@ -60,11 +73,11 @@ The public booking page guides guests through five steps for an instant reservat
 2. Search the database-backed website calendar and choose an available, booking-enabled residence. Booked stays, unexpired holds and admin date blocks are excluded; the database rechecks availability when the hold is created.
 3. Provide first/last name, email, international phone, country, optional arrival time and special requests.
 4. Review the room, dates, guests and database-configured nightly-rate estimate, then acknowledge the terms, privacy and cancellation information.
-5. For a booking-enabled room, create a 15-minute database hold and continue to hosted payment. For a room not enabled for instant booking, guests send a request and review a separate payment step explaining that payment comes only after property confirmation; the request remains pending and does not hold dates or accept payment. The checkout link for a hold is refresh-safe and uses a random capability token distinct from the guest-visible `DEMI-YYYY-XXXXXX` reference.
+5. For a booking-enabled room, create a 15-minute database hold and continue to hosted payment. For a room not enabled for instant booking, guests send a request and review a separate payment step explaining that payment comes only after property confirmation; bank transfer, MTN MoMo and Airtel Money are described as post-confirmation options, and guests can request another method. The request remains pending and does not hold dates or accept payment. The checkout link for a hold is refresh-safe and uses a random capability token distinct from the guest-visible `DEMI-YYYY-XXXXXX` reference.
 
 The database owns price calculation, occupancy/minimum-stay checks, collision prevention, the 15-minute expiry, policy-acceptance timestamp (`draft-v1`) and a per-email request limit. Flutterwave hosted checkout is integrated with the existing hold: the server creates the payment session, verifies the provider callback and webhook, and confirms only a verified payment. Card data is entered on Flutterwave and is never collected or stored by this site. Real payments remain unavailable until the migration is applied, the Edge Functions are deployed, and the Flutterwave test/live secrets and site URL are securely configured. Requests for rooms not enabled for online booking are not holds and cannot be paid; staff must verify and enable a room before guests can use the payment flow. Taxes and fees are not configured; the displayed estimate is nightly rate × nights.
 
-The nine published units are named A1, A2, A3, B1, B2, B3, C1, C2 and C3. Their descriptions are neutral, photo-based and editable. The current supplied values are 2 guests, one bedroom, one bathroom, $35 USD per night, check-in at 15:00 and check-out at 11:00. Bed type, quantity and dimensions are deliberately blank and marked pending verification. In `/admin/apartments`, enter the verified bed details and explicitly verify both the bed configuration and maximum occupancy for each room before enabling instant online reservations. The database enforces these checks independently. Until then, guests can submit a request for a selected room; staff must verify and confirm the stay, and no dates are held by an inquiry. Add confirmed amenities in `/admin/amenities` and approved policies in `/admin/house-rules`; no sample amenities or house rules are seeded. Use `/admin/availability` to block dates for owner use or maintenance. Airbnb/Booking.com synchronization is not implemented by these database tables; it needs the external channel manager.
+The eight published bedrooms are named A1, A2, A3, B1, B2, B3, C1 and C2. They are grouped into three apartments and share the living room and kitchen within their own group. In `/admin/apartments`, enter verified bed details and explicitly verify both bed configuration and maximum occupancy before enabling instant online reservations. The database enforces these checks independently. Until then, guests can submit a request for a selected bedroom; staff must verify and confirm the stay, and no dates are held by an inquiry. Once confirmed, the stay is listed in `/admin/availability` and its dates are automatically excluded from new guest requests. Add confirmed amenities in `/admin/amenities` and approved policies in `/admin/house-rules`; no sample amenities or house rules are seeded. Use `/admin/availability` to block dates for owner use or maintenance. Airbnb/Booking.com synchronization is not implemented by these database tables; it needs the external channel manager.
 
 Statuses include `pending` (legacy requests), `awaiting_payment`, `confirmed`, `cancelled`, `expired`, `checked_in` and `checked_out`. Payment state is separate. Admin status changes are audited; payment is never marked paid from the browser. Confirm a booking manually only after checking inventory and agreeing payment arrangements with the guest.
 

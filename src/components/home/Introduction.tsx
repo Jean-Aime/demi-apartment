@@ -20,7 +20,7 @@ export default function Introduction() {
           </div>
           <Reveal delay={120} className="md:col-span-3 md:col-start-10">
             <p className="border-t border-ink-200 pt-5 text-[0.95rem] leading-[1.85] text-ink-500">
-              DEMI APARTMENT is a collection of nine self-contained residences in Kimironko, Kigali — designed for
+              DEMI APARTMENT is a collection of eight private bedrooms arranged within three shared apartment environments in Kimironko, Kigali — designed for
               privacy, calm and a more personal way to stay.
             </p>
           </Reveal>
@@ -46,7 +46,7 @@ export default function Introduction() {
             </Reveal>
             <Reveal delay={180} className="mt-8 border-t border-ink-200 pt-5">
               <p className="text-[0.9rem] leading-[1.85] text-ink-500">
-                Proportion, warm light and considered interiors carry through all nine apartments, from the first
+                Proportion, warm light and considered interiors carry through the three apartment environments and all eight bedrooms, from the first
                 threshold to the last evening.
               </p>
               <Link to="/about" className="link-line mt-6 text-ink-900">

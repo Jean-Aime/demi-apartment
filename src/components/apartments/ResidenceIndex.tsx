@@ -13,7 +13,7 @@ interface ResidenceIndexProps {
 }
 
 /**
- * The nine-room collection as a typographic index. On pointer devices a
+ * The eight-bedroom collection as a typographic index. On pointer devices a
  * photograph follows the hovered row; on touch, each row carries a thumbnail.
  */
 export default function ResidenceIndex({ tone = 'paper' }: ResidenceIndexProps) {
@@ -30,13 +30,13 @@ export default function ResidenceIndex({ tone = 'paper' }: ResidenceIndexProps) 
             <Reveal>
               <SectionLabel index="04">The complete collection</SectionLabel>
               <h2 className="display mt-6 text-[clamp(2.7rem,5vw,5rem)] text-ink-900">
-                Nine residences. <span className="italic text-gold-ink">One address.</span>
+                Eight bedrooms. <span className="italic text-gold-ink">Three apartments.</span>
               </h2>
             </Reveal>
           </div>
           <Reveal delay={100} className="md:col-span-4 md:col-start-9">
             <p className="text-[0.95rem] leading-[1.85] text-ink-500">
-              A1 through C3. Each apartment is listed individually, with only the details the property has verified.
+              A1 through C2. Each private bedroom is listed individually, with only the details the property has verified.
             </p>
           </Reveal>
         </div>
@@ -118,7 +118,7 @@ export default function ResidenceIndex({ tone = 'paper' }: ResidenceIndexProps) 
 
         <Reveal delay={120} className="mt-10">
           <Link to="/apartments" className="btn-outline">
-            Explore all nine residences
+            Explore all eight bedrooms
             <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </Reveal>

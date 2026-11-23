@@ -69,7 +69,7 @@ export default function SiteHeader() {
         }`}
       >
         <div className="mx-auto grid h-20 max-w-site grid-cols-[auto_1fr_auto] items-center gap-6 px-5 sm:px-6 md:h-24 md:px-12 lg:px-16">
-          <BrandMark light={!solid} />
+          <BrandMark />
 
           <nav aria-label="Primary" className="hidden items-center justify-center gap-7 xl:flex">
             {navigation.map((item) =>
@@ -99,7 +99,7 @@ export default function SiteHeader() {
                     type="button"
                     aria-expanded={residencesOpen}
                     aria-controls="residences-menu"
-                    aria-label="Show the nine residences"
+                    aria-label="Show the eight private bedrooms"
                     onClick={() => setResidencesOpen((open) => !open)}
                     className="p-1 text-current opacity-60 transition-opacity hover:opacity-100"
                   >
@@ -125,7 +125,7 @@ export default function SiteHeader() {
                           <div className="flex items-end justify-between gap-6 border-b border-ink-200/70 pb-4">
                             <div>
                               <p className="eyebrow text-gold-ink">The collection</p>
-                              <p className="mt-2 font-display text-2xl">Nine residences, one address.</p>
+                              <p className="mt-2 font-display text-2xl">Eight bedrooms, three apartment groups.</p>
                             </div>
                             <Link to="/apartments" className="link-line text-ink-900">
                               All residences

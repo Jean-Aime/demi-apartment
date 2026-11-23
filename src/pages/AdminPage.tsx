@@ -1,6 +1,26 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { Building2, CalendarDays, Check, Clock3, LogOut, RefreshCw, Search, ShieldCheck } from 'lucide-react';
+import {
+  BarChart3,
+  Building2,
+  CalendarCheck,
+  CalendarDays,
+  Check,
+  ClipboardList,
+  Clock3,
+  ExternalLink,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  RefreshCw,
+  ScrollText,
+  Search,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  UsersRound,
+  X,
+} from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { apartments } from '@/data/apartments';
 import { supabase } from '@/lib/supabase';
@@ -34,15 +54,36 @@ const statusStyles: Record<BookingStatus, string> = {
   checked_out: 'bg-ink-100 text-ink-600',
 };
 
+const adminNavigation = [
+  { label: 'Overview', path: '/admin', icon: LayoutDashboard, group: 'Workspace' },
+  { label: 'Bookings', path: '/admin/bookings', icon: ClipboardList, group: 'Operations' },
+  { label: 'Availability', path: '/admin/availability', icon: CalendarCheck, group: 'Operations' },
+  { label: 'Calendar', path: '/admin/calendar', icon: CalendarDays, group: 'Operations' },
+  { label: 'Apartment Management', path: '/admin/apartments', icon: Building2, group: 'Property' },
+  { label: 'Amenities', path: '/admin/amenities', icon: Sparkles, group: 'Property' },
+  { label: 'House rules', path: '/admin/house-rules', icon: ScrollText, group: 'Property' },
+  { label: 'Guests', path: '/admin/guests', icon: UsersRound, group: 'Insights' },
+  { label: 'Reports', path: '/admin/reports', icon: BarChart3, group: 'Insights' },
+  { label: 'Settings', path: '/admin/settings', icon: Settings, group: 'Insights' },
+];
+
+function isAdminNavigationActive(path: string, section: string) {
+  return section === '' || section === 'dashboard'
+    ? path === '/admin'
+    : path === `/admin/${section}`;
+}
+
 export default function AdminPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { apartments: managedApartments } = useApartments();
   const section = location.pathname.replace(/^\/admin\/?/, '') || 'dashboard';
+  const activeNavigation = adminNavigation.find((item) => isAdminNavigationActive(item.path, section));
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState('');
   const [bookings, setBookings] = useState<BookingRequest[]>([]);
@@ -352,56 +393,117 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
     );
   }
 
+  const adminInitials = (session.user.email ?? 'DA')
+    .split('@')[0]
+    .split(/[._-]/)
+    .map((part) => part[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
-    <main className="min-h-screen bg-paper-warm">
-      <header className="border-b border-ink-100 bg-paper">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-5 py-5 sm:px-6 md:px-12 lg:px-16">
-          <Link to="/" className="inline-flex items-center gap-3 text-ink-900" aria-label="DEMI Apartment home">
-            <span className="flex h-10 w-10 items-center justify-center border border-gold/50">
-              <Building2 className="h-4 w-4 text-gold" strokeWidth={1.25} aria-hidden="true" />
-            </span>
-            <span className="flex flex-col leading-none">
-              <span className="font-serif text-lg tracking-[0.2em]">DEMI</span>
-              <span className="mt-1 text-[0.55rem] tracking-[0.35em] text-ink-400">ADMINISTRATION</span>
-            </span>
-          </Link>
+    <main className="min-h-screen bg-[#f7f6f2]">
+      <header className="sticky top-0 z-50 border-b border-ink-100 bg-paper/95 shadow-[0_4px_18px_rgba(27,25,20,0.035)] backdrop-blur">
+        <div className="flex h-[76px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-4 lg:w-64">
+            <Link to="/admin" className="inline-flex shrink-0 items-center gap-3 text-ink-900" aria-label="DEMI administration overview">
+              <span className="flex h-10 w-10 items-center justify-center bg-ink-900 text-gold">
+                <Building2 className="h-4 w-4" strokeWidth={1.25} aria-hidden="true" />
+              </span>
+              <span className="flex flex-col leading-none">
+                <span className="font-serif text-lg tracking-[0.2em]">DEMI</span>
+                <span className="mt-1 text-[0.55rem] font-semibold tracking-[0.28em] text-ink-400">PROPERTY DESK</span>
+              </span>
+            </Link>
+            <span className="hidden h-8 border-l border-ink-200 lg:block" />
+            <span className="hidden truncate text-sm font-medium text-ink-700 lg:block">{activeNavigation?.label ?? 'Overview'}</span>
+          </div>
           <div className="flex min-w-0 items-center gap-2 sm:gap-4">
-            <span className="hidden max-w-[30vw] truncate text-sm text-ink-500 sm:block">{session.user.email}</span>
+            <button
+              type="button"
+              onClick={() => setMobileNavigationOpen((open) => !open)}
+              aria-expanded={mobileNavigationOpen}
+              aria-controls="admin-mobile-navigation"
+              aria-label={mobileNavigationOpen ? 'Close administration menu' : 'Open administration menu'}
+              className="inline-flex h-10 w-10 items-center justify-center border border-ink-200 text-ink-700 transition-colors hover:border-gold hover:text-gold lg:hidden"
+            >
+              {mobileNavigationOpen ? <X className="h-4 w-4" aria-hidden="true" /> : <Menu className="h-4 w-4" aria-hidden="true" />}
+            </button>
+            <Link to="/" target="_blank" rel="noreferrer" className="hidden items-center gap-2 px-3 py-2 text-xs font-medium text-ink-600 transition-colors hover:text-gold-deep sm:inline-flex">
+              <span>View website</span><ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+            <span className="hidden h-8 border-l border-ink-200 sm:block" />
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center bg-gold/20 text-xs font-semibold tracking-wide text-ink-800" aria-hidden="true">{adminInitials}</span>
+            <span className="hidden max-w-[22vw] truncate text-xs text-ink-500 md:block">{session.user.email}</span>
             <button
               type="button"
               onClick={handleSignOut}
-              className="inline-flex shrink-0 items-center gap-2 border border-ink-200 px-3 py-2 text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-700 transition-colors hover:border-gold hover:text-gold sm:px-4 sm:text-xs sm:tracking-[0.16em]"
+              className="inline-flex shrink-0 items-center gap-2 border border-ink-200 px-3 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-ink-700 transition-colors hover:border-ink-900 hover:bg-ink-900 hover:text-paper sm:px-4 sm:text-[0.65rem]"
             >
               <LogOut className="h-4 w-4" aria-hidden="true" />
-              Sign out
+              <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
         </div>
       </header>
 
-      <nav aria-label="Administration" className="border-b border-ink-100 bg-paper">
-        <div className="mx-auto flex max-w-[1440px] gap-2 overflow-x-auto px-5 py-3 sm:px-6 md:px-12 lg:px-16">
-          {[
-            ['Overview', '/admin'],
-            ['Bookings', '/admin/bookings'],
-            ['Apartments', '/admin/apartments'],
-            ['Availability', '/admin/availability'],
-            ['Amenities', '/admin/amenities'],
-            ['House rules', '/admin/house-rules'],
-            ['Calendar', '/admin/calendar'],
-            ['Guests', '/admin/guests'],
-            ['Reports', '/admin/reports'],
-            ['Settings', '/admin/settings'],
-          ].map(([label, path]) => (
-            <Link key={path} to={path} aria-current={(section === '' ? path === '/admin' : path === `/admin/${section}`) ? 'page' : undefined}
-              className={`whitespace-nowrap px-3 py-2 text-xs uppercase tracking-[0.1em] transition-colors ${(section === '' ? path === '/admin' : path === `/admin/${section}`) ? 'bg-ink-900 text-paper' : 'text-ink-600 hover:bg-paper-warm hover:text-ink-900'}`}>
-              {label}
-            </Link>
-          ))}
+      <nav
+        id="admin-mobile-navigation"
+        aria-label="Administration"
+        className={`${mobileNavigationOpen ? 'block' : 'hidden'} border-b border-ink-100 bg-paper lg:hidden`}
+      >
+        <div className="grid grid-cols-2 gap-2 px-5 py-3 sm:grid-cols-3 sm:px-6">
+          {adminNavigation.map(({ label, path, icon: Icon }) => {
+            const isActive = isAdminNavigationActive(path, section);
+
+            return (
+              <Link
+                key={path}
+                to={path}
+                onClick={() => setMobileNavigationOpen(false)}
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex min-h-11 items-center gap-2 border-l-2 px-3 py-2 text-xs font-medium transition-colors ${isActive ? 'border-gold bg-paper-warm text-ink-900' : 'border-transparent text-ink-600 hover:bg-paper-warm hover:text-ink-900'}`}
+              >
+                <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-gold-deep' : 'text-ink-400'}`} aria-hidden="true" />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
 
-      <div className="mx-auto max-w-[1440px] px-5 py-10 sm:px-6 md:px-12 md:py-16 lg:px-16">
+      <div className="lg:flex">
+        <aside className="hidden w-64 shrink-0 border-r border-ink-100 bg-paper px-4 py-7 lg:sticky lg:top-[76px] lg:block lg:h-[calc(100vh-76px)] lg:self-start lg:overflow-y-auto">
+          <nav aria-label="Administration" className="space-y-5">
+            {adminNavigation.map(({ label, path, icon: Icon, group }, index) => {
+              const isActive = isAdminNavigationActive(path, section);
+
+              return (
+                <div key={path}>
+                  {(index === 0 || adminNavigation[index - 1].group !== group) && (
+                    <p className={`${index > 0 ? 'mt-5' : ''} mb-2 px-3 text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-ink-400`}>{group}</p>
+                  )}
+                  <Link
+                    to={path}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`flex items-center gap-3 border-l-2 px-3 py-2.5 text-[0.82rem] transition-colors ${isActive ? 'border-gold bg-paper-warm font-semibold text-ink-900' : 'border-transparent text-ink-600 hover:bg-paper-warm hover:text-ink-900'}`}
+                  >
+                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-gold-deep' : 'text-ink-400'}`} strokeWidth={1.6} aria-hidden="true" />
+                    <span>{label}</span>
+                  </Link>
+                </div>
+              );
+            })}
+          </nav>
+          <div className="mt-8 border-t border-ink-100 pt-5">
+            <div className="flex items-center gap-3 bg-paper-warm p-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center bg-paper text-gold-deep"><ShieldCheck className="h-4 w-4" aria-hidden="true" /></span>
+              <span><span className="block text-xs font-semibold text-ink-800">Secure workspace</span><span className="mt-0.5 block text-[0.65rem] text-ink-500">Administrator access</span></span>
+            </div>
+          </div>
+        </aside>
+
+      <div className="min-w-0 flex-1 px-5 py-8 sm:px-6 md:px-8 md:py-10 xl:px-10">
         {authError && <p className="mb-6 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">{authError}</p>}
         {bookingsError && section !== 'bookings' && (
           <p className="mb-6 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">
@@ -614,6 +716,7 @@ WHERE id = '${session.user.id}'::uuid;`}</pre>
         ) : (
           <AdminDashboard bookings={bookings} onNavigate={navigate} />
         )}
+      </div>
       </div>
       <AdminModal
         open={Boolean(selectedBooking)}

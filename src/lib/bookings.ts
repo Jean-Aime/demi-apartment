@@ -212,6 +212,41 @@ export async function createReservationRequest(
   return { ok: true, request: parsed.data[0] };
 }
 
+const bookingRequestStatusSchema = z.object({
+  booking_reference: z.string(),
+  apartment_name: z.string(),
+  check_in: isoDate,
+  check_out: isoDate,
+  guests: z.number().int().min(1).max(MAX_GUESTS),
+  status: z.enum(['pending', 'awaiting_payment', 'confirmed', 'cancelled', 'expired', 'checked_in', 'checked_out']),
+});
+
+export type BookingRequestStatus = z.infer<typeof bookingRequestStatusSchema>;
+
+export async function fetchBookingRequestStatus(
+  bookingReference: string,
+  guestEmail: string,
+): Promise<BookingRequestStatus | null> {
+  if (!supabase) throw new Error('Supabase is not configured.');
+
+  const inputs = z.object({
+    bookingReference: z.string().trim().min(1).max(40),
+    guestEmail: z.string().trim().email().max(254),
+  }).safeParse({ bookingReference, guestEmail });
+  if (!inputs.success) throw new Error('Enter the booking reference and the email used for the request.');
+
+  const { data, error } = await supabase.rpc('get_booking_request_status', {
+    p_booking_reference: inputs.data.bookingReference.toUpperCase(),
+    p_guest_email: inputs.data.guestEmail.toLowerCase(),
+  });
+  if (error) throw new Error(`Could not check the request status: ${error.message}`);
+
+  const parsed = bookingRequestStatusSchema.array().safeParse(data);
+  if (!parsed.success) throw new Error('The request-status service returned an unexpected response.');
+  if (parsed.data.length > 1) throw new Error('Multiple requests matched these details. Contact the property team.');
+  return parsed.data[0] ?? null;
+}
+
 const checkoutSchema = z.object({
   booking_reference: z.string(),
   apartment_slug: z.string(),

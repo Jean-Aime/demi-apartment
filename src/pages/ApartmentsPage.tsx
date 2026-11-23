@@ -29,9 +29,9 @@ export default function ApartmentsPage() {
             A private collection of <span className="italic text-gold-light">considered stays.</span>
           </>
         }
-        intro={`Nine individual serviced residences in Kimironko, Kigali. Explore each room’s photography, verified details and reservation options.`}
+        intro={`Eight private bedrooms arranged within three shared apartment environments in Kimironko, Kigali.`}
         image={media.introWide}
-        meta="A1 — C3 · Kimironko"
+        meta="Apartments A, B & C · Kimironko"
       />
 
       <section className="bg-paper-warm py-14 md:py-20">
@@ -39,7 +39,7 @@ export default function ApartmentsPage() {
           <Reveal className="md:col-span-5">
             <SectionLabel>The collection</SectionLabel>
             <h2 className="display mt-5 text-[clamp(2.2rem,3.8vw,3.4rem)] text-ink-900">
-              Nine apartments, each with its own <span className="italic text-gold-ink">photographs and details.</span>
+              Eight private bedrooms across <span className="italic text-gold-ink">three apartment groups.</span>
             </h2>
           </Reveal>
           <Reveal delay={120} className="md:col-span-4 md:col-start-8">
@@ -76,7 +76,7 @@ export default function ApartmentsPage() {
 
           <Reveal delay={120} className="mt-10 overflow-x-auto">
             <table className="w-full min-w-[46rem] border-collapse text-left">
-              <caption className="sr-only">Verified details for the nine residences</caption>
+              <caption className="sr-only">Verified details for the eight private bedrooms</caption>
               <thead>
                 <tr className="border-y border-ink-300/60">
                   {['Residence', 'Guests', 'Bedrooms', 'Bathrooms', 'Nightly rate', 'Booking'].map((heading) => (

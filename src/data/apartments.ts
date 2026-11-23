@@ -4,6 +4,8 @@ export interface Apartment {
   slug: string;
   number: string;
   name: string;
+  apartmentGroup?: 'A' | 'B' | 'C';
+  apartmentGroupName?: string;
   summary: string;
   photo: Photo;
   photos: Photo[];
@@ -21,7 +23,7 @@ export interface Apartment {
   bookingEnabled: boolean;
 }
 
-const unitNames = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3'];
+const unitNames = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2'];
 
 const photoDescriptions = [
   'A considered bedroom interior, photographed with white bedding, a dark accent wall and tiled flooring. The gallery also includes a bathroom view with a glass-enclosed shower.',
@@ -32,16 +34,17 @@ const photoDescriptions = [
   'A bedroom interior photographed with floating bedside shelves beside the headboard. The gallery also shows a dining table with upholstered chairs.',
   'A bedroom interior photographed with a multi-door white wardrobe. The gallery also includes a shaded terrace with seating and a glass balustrade.',
   'A bedroom photographed with white linens, wooden bedside tables and a deep blue accent wall. The gallery includes a bright bathroom with white fixtures.',
-  'A bedroom interior photographed with full-height curtains and grey tiled flooring. The gallery also shows a dining area beside the kitchen.',
 ];
 
-export const apartments: Apartment[] = apartmentPhotos.map((photo, index) => {
-  const number = unitNames[index];
+export const apartments: Apartment[] = unitNames.map((number, index) => {
+  const photo = apartmentPhotos[index];
   const slugNumber = String(index + 1).padStart(2, '0');
   return {
     slug: `residence-${slugNumber}`,
     number,
     name: number,
+    apartmentGroup: number.startsWith('A') ? 'A' : number.startsWith('B') ? 'B' : 'C',
+    apartmentGroupName: number.startsWith('A') ? 'Apartment A' : number.startsWith('B') ? 'Apartment B' : 'Apartment C',
     summary: photoDescriptions[index],
     photo,
     photos: [photo, apartmentDetailPhotos[index]],

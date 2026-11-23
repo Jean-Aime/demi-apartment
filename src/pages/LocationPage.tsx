@@ -38,7 +38,7 @@ export default function LocationPage() {
                 A quieter side of <span className="italic text-gold-ink">the city.</span>
               </h2>
               <p className="mt-6 text-[0.975rem] leading-[1.85] text-ink-500">
-                DEMI APARTMENT is located in Kimironko, Kigali. The property is a residential building of nine
+                DEMI APARTMENT is located in Kimironko, Kigali. The property is arranged into three apartment groups with eight private bedrooms
                 private apartments — an address to return to after a day in the city, rather than a lobby to pass
                 through.
               </p>
